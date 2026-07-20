@@ -47,6 +47,25 @@ try {
     $results[] = ['status' => 'error', 'msg' => 'Update users: ' . $e->getMessage()];
 }
 
+try {
+    // 4. Add trusted_devices table (cookie-based OTP skip)
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS trusted_devices (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            user_id     INT NOT NULL,
+            token       VARCHAR(64) NOT NULL UNIQUE,
+            user_agent  VARCHAR(255) DEFAULT NULL,
+            ip_address  VARCHAR(45) DEFAULT NULL,
+            expires_at  DATETIME NOT NULL,
+            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    ");
+    $results[] = ['status' => 'ok', 'msg' => 'Table trusted_devices created (or already exists)'];
+} catch (Exception $e) {
+    $results[] = ['status' => 'error', 'msg' => 'trusted_devices: ' . $e->getMessage()];
+}
+
 ?><!DOCTYPE html>
 <html lang="en">
 <head>

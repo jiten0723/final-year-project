@@ -74,7 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once __DIR__ . '/includes/mailer.php';
             sendWelcomeEmail($user['email'], $user['name'], $_SESSION['user_role']);
 
-            // ── Set trusted device cookie (30 days) ──────────────────────────
+            // ── Set trusted device cookie (60 days) ──────────────────────────
+            // Delete all old tokens for this user+browser to keep the table clean
+            $db->prepare("DELETE FROM trusted_devices WHERE user_id = ? AND user_agent = ?")
+               ->execute([$uid, $_SERVER['HTTP_USER_AGENT'] ?? 'unknown']);
+
             $token     = bin2hex(random_bytes(32)); // 64-char secure token
             $expiresAt = date('Y-m-d H:i:s', strtotime('+60 days'));
             $db->prepare("
@@ -88,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $expiresAt
             ]);
 
-            // Secure cookie: name, value, expiry, path, domain, secure, httponly
+            // Set cookie BEFORE any output or redirect
             setcookie(
                 'educore_trusted',
                 $uid . ':' . $token,
@@ -102,8 +106,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             // ─────────────────────────────────────────────────────────────────
 
-            $success = 'Account verified! This device is now trusted for 30 days. Redirecting...';
-            header("Refresh: 0; URL=" . BASE_URL . "/dashboard/" . $_SESSION['user_role'] . ".php");
+            $dashUrl = BASE_URL . "/dashboard/" . $_SESSION['user_role'] . ".php";
+            $success = 'Verified! This device is now trusted for 60 days. Redirecting...';
+            // Use JS redirect with small delay so browser stores the cookie before navigating
+            header("Location: $dashUrl");
+            exit();
         } else {
             $error = 'Invalid or expired OTP. Please try again.';
         }

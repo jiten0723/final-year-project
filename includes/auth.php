@@ -131,22 +131,41 @@ function loginUser($email, $password) {
         [$cookieUid, $cookieToken] = explode(':', $cookieVal, 2);
 
         if ((int)$cookieUid === (int)$user['id'] && strlen($cookieToken) === 64) {
-            $trusted = $db->prepare("
-                SELECT id FROM trusted_devices
-                WHERE user_id = ? AND token = ? AND expires_at > NOW()
-            ");
-            $trusted->execute([$user['id'], $cookieToken]);
+            try {
+                $trusted = $db->prepare("
+                    SELECT id FROM trusted_devices
+                    WHERE user_id = ? AND token = ? AND expires_at > NOW()
+                ");
+                $trusted->execute([$user['id'], $cookieToken]);
 
-            if ($trusted->fetch()) {
-                // Trusted device — mark verified and skip OTP completely
-                $db->prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
-                   ->execute([$user['id']]);
-                return ['success' => true, 'role' => $user['role'], 'needs_otp' => false];
+                if ($trusted->fetch()) {
+                    // Trusted device — keep user verified, refresh cookie + DB expiry, skip OTP
+                    $db->prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+                       ->execute([$user['id']]);
+
+                    $newExpiry = date('Y-m-d H:i:s', strtotime('+60 days'));
+                    $db->prepare("UPDATE trusted_devices SET expires_at = ? WHERE user_id = ? AND token = ?")
+                       ->execute([$newExpiry, $user['id'], $cookieToken]);
+
+                    setcookie('educore_trusted', $user['id'] . ':' . $cookieToken, [
+                        'expires'  => strtotime('+60 days'),
+                        'path'     => '/',
+                        'secure'   => false,
+                        'httponly' => true,
+                        'samesite' => 'Lax',
+                    ]);
+
+                    return ['success' => true, 'role' => $user['role'], 'needs_otp' => false];
+                }
+            } catch (\Exception $e) {
+                error_log('trusted_devices check failed: ' . $e->getMessage());
+                // Fall through to OTP path
             }
         }
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // No trusted device found — send OTP
     // Invalidate any previous unused OTPs for this user
     $db->prepare("UPDATE otp_codes SET used=1 WHERE user_id=? AND used=0")
        ->execute([$user['id']]);

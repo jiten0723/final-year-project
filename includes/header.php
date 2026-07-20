@@ -58,9 +58,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <?php
 // Add page-specific body classes (e.g., admin page)
 $bodyClasses = 'bg-gray-950 text-white';
-if (isset($currentPage) && $currentPage === 'admin.php' && strpos($_SERVER['PHP_SELF'], '/dashboard/') !== false) {
-    $bodyClasses = 'admin-page';
-}
 ?>
 <body class="<?php echo $bodyClasses; ?>">
 

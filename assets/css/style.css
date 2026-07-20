@@ -2209,65 +2209,7 @@ select option {
   color: var(--text-primary);
 }
 
-/* Admin page: light theme overrides */
-.admin-page {
-  --bg-dark: #f8fafc;
-  --bg-darker: #e2e8f0;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f3f4f6;
-  --bg-input: #f8fafc;
-  --border: #d1d5db;
-  --border-hover: rgba(15, 23, 42, 0.08);
-  --text-primary: #111827;
-  --text-secondary: #475569;
-  --text-muted: #6b7280;
-  --primary: #22c55e;
-  --secondary: #3b82f6;
-  --gradient-card: linear-gradient(145deg, #ffffff, #f3f4f6);
-  background-color: var(--bg-dark) !important;
-  color: var(--text-primary) !important;
-}
-
-.admin-page .navbar-educore,
-.admin-page .sidebar,
-.admin-page .dashboard-content,
-.admin-page .form-card,
-.admin-page .toast-custom,
-.admin-page .alert-custom,
-.admin-page .table-dark-custom,
-.admin-page .course-card,
-.admin-page .payment-card,
-.admin-page .hero-card-float,
-.admin-page .hero-mini-card {
-  background: var(--bg-card) !important;
-  border-color: var(--border) !important;
-}
-
-.admin-page .sidebar {
-  background: var(--bg-dark) !important;
-}
-
-.admin-page .sidebar-link,
-.admin-page .sidebar-name,
-.admin-page .sidebar-email,
-.admin-page .sidebar-link-badge,
-.admin-page .stat-label,
-.admin-page .course-badge,
-.admin-page .role-badge,
-.admin-page .nav-link-item,
-.admin-page .btn-primary-custom,
-.admin-page button,
-.admin-page input,
-.admin-page textarea,
-.admin-page select {
-  color: var(--text-primary) !important;
-}
-
-.admin-page .sidebar-link:hover,
-.admin-page .sidebar-link.active {
-  background: rgba(59, 130, 246, 0.12) !important;
-  color: var(--secondary) !important;
-}
+/* Admin page uses same dark theme as teacher/student dashboards */
 
 .admin-page .sidebar-link-badge {
   background: var(--secondary) !important;

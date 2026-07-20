@@ -19,6 +19,44 @@ $completedCount  = $db->prepare("SELECT COUNT(*) FROM enrollments WHERE user_id=
 $certCount       = $db->prepare("SELECT COUNT(*) FROM certificates WHERE user_id=?"); $certCount->execute([$uid]); $certCount = $certCount->fetchColumn();
 $quizCount       = $db->prepare("SELECT COUNT(*) FROM quiz_results WHERE user_id=?"); $quizCount->execute([$uid]); $quizCount = $quizCount->fetchColumn();
 
+// --- Student Performance Scoring Algorithm ---
+// Quiz component (40% weight): avg_quiz_percentage = AVG(quiz_results.percentage)
+$avgQuizQuery = $db->prepare("SELECT AVG(percentage) FROM quiz_results WHERE user_id = ?");
+$avgQuizQuery->execute([$uid]);
+$avgQuizPercentage = $avgQuizQuery->fetchColumn();
+$avgQuizPercentage = $avgQuizPercentage !== null ? floatval($avgQuizPercentage) : 0.0;
+$quizScore = $avgQuizPercentage * 0.4;
+
+// Progress component (35% weight): avg_progress = AVG(enrollments.progress)
+$avgProgressQuery = $db->prepare("SELECT AVG(progress) FROM enrollments WHERE user_id = ? AND status IN ('active', 'completed')");
+$avgProgressQuery->execute([$uid]);
+$avgProgress = $avgProgressQuery->fetchColumn();
+$avgProgress = $avgProgress !== null ? floatval($avgProgress) : 0.0;
+$progressScore = $avgProgress * 0.35;
+
+// Completion component (25% weight): completion_rate = completed_courses / total_enrolled * 100
+$totalEnrolled = intval($enrolledCount) + intval($completedCount);
+$completionRate = $totalEnrolled > 0 ? (intval($completedCount) / $totalEnrolled) * 100 : 0.0;
+$completionScore = $completionRate * 0.25;
+
+// Total Performance Score
+$performanceScore = $quizScore + $progressScore + $completionScore;
+
+// Determine Grade & Themes
+if ($performanceScore >= 90) {
+    $gradeLabel = "A — Outstanding 🏆";
+    $gradeColor = "#22c55e"; // Green
+} elseif ($performanceScore >= 75) {
+    $gradeLabel = "B — Good 👍";
+    $gradeColor = "#3b82f6"; // Blue
+} elseif ($performanceScore >= 60) {
+    $gradeLabel = "C — Average 📚";
+    $gradeColor = "#f59e0b"; // Orange/Yellow
+} else {
+    $gradeLabel = "D — Needs Improvement 💪";
+    $gradeColor = "#ef4444"; // Red
+}
+
 // Enrolled courses
 $enrolledCourses = $db->prepare("
     SELECT e.*, co.title, co.type, co.total_lessons, co.price, co.level,
@@ -142,6 +180,126 @@ include __DIR__ . '/../includes/header.php';
                 <?php endforeach; ?>
             </div>
 
+            <!-- Performance Card Section -->
+            <style>
+                .performance-gauge-col {
+                    border-right: 1px solid var(--border);
+                    padding-right: 24px;
+                }
+                @media (max-width: 991.98px) {
+                    .performance-gauge-col {
+                        border-right: none !important;
+                        border-bottom: 1px solid var(--border);
+                        padding-right: 0 !important;
+                        padding-bottom: 24px;
+                        margin-bottom: 24px;
+                    }
+                }
+            </style>
+            
+            <div style="background:var(--gradient-card); border: 1px solid var(--border); border-radius:var(--radius-lg); padding:28px; margin-bottom:24px; position:relative; overflow:hidden;" class="animate-fade-up">
+                <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));"></div>
+                <div class="row align-items-center">
+                    <!-- Visual Score Gauge -->
+                    <div class="col-lg-5 text-center performance-gauge-col">
+                        <h3 style="font-size:16px; font-weight:700; margin-bottom:20px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary);">Your Learning Performance</h3>
+                        <div style="position:relative; width:160px; height:160px; margin:0 auto 16px auto; display:flex; align-items:center; justify-content:center;">
+                            <!-- Circular Progress SVG -->
+                            <svg width="160" height="160" viewBox="0 0 160 160" style="transform: rotate(-90deg);">
+                                <circle cx="80" cy="80" r="70" fill="transparent" stroke="var(--bg-input)" stroke-width="10" />
+                                <circle cx="80" cy="80" r="70" fill="transparent" stroke="url(#scoreGrad)" stroke-width="10" 
+                                        stroke-dasharray="439.8" stroke-dashoffset="<?php echo 439.8 - (439.8 * min(100, max(0, $performanceScore)) / 100); ?>" 
+                                        stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out;" />
+                                <defs>
+                                    <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="<?php echo $gradeColor; ?>" />
+                                        <stop offset="100%" stop-color="var(--secondary)" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div style="position:absolute; text-align:center;">
+                                <div style="font-size:36px; font-weight:900; color:#fff; line-height:1;"><?php echo number_format($performanceScore, 1); ?></div>
+                                <div style="font-size:12px; color:var(--text-muted); font-weight:600; margin-top:4px;">Score</div>
+                            </div>
+                        </div>
+                        <div style="font-size:16px; font-weight:800; color:<?php echo $gradeColor; ?>; background:rgba(255,255,255,0.03); display:inline-block; padding:6px 20px; border-radius:50px; border:1px solid rgba(255,255,255,0.05); margin-bottom:12px;">
+                            <?php echo $gradeLabel; ?>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); max-width:280px; margin:0 auto;">Your performance is updated in real-time based on your activity across quizzes and courses.</p>
+                    </div>
+                    
+                    <!-- Summary Table -->
+                    <div class="col-lg-7 ps-lg-4">
+                        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px; color:var(--text-secondary);"><i class="fas fa-list-check" style="margin-right:8px; color:var(--primary);"></i>Score Breakdown</h3>
+                        <div class="table-responsive">
+                            <table class="table table-dark-custom mb-0" style="background:transparent; border:none;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid var(--border); font-size:11px; color:var(--text-muted); text-transform:uppercase;">
+                                        <th style="padding:10px 8px; border:none; color:var(--text-muted) !important;">Component</th>
+                                        <th style="padding:10px 8px; text-align:center; border:none; color:var(--text-muted) !important;">Raw Metric</th>
+                                        <th style="padding:10px 8px; text-align:center; border:none; color:var(--text-muted) !important;">Weight</th>
+                                        <th style="padding:10px 8px; text-align:right; border:none; color:var(--text-muted) !important;">Contribution</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size:13.5px; color:#fff;">
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td style="padding:12px 8px; font-weight:600; border:none; color:#fff !important;">
+                                            <i class="fas fa-brain" style="color:#f59e0b; margin-right:8px; width:16px;"></i>Quiz Performance
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:center; border:none; color:var(--text-secondary) !important;">
+                                            <?php echo number_format($avgQuizPercentage, 1); ?>% Avg
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:center; border:none; color:var(--text-muted) !important;">
+                                            40%
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:right; border:none; font-weight:700; color:#fff !important;">
+                                            +<?php echo number_format($quizScore, 2); ?>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td style="padding:12px 8px; font-weight:600; border:none; color:#fff !important;">
+                                            <i class="fas fa-book-open" style="color:#22c55e; margin-right:8px; width:16px;"></i>Course Progress
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:center; border:none; color:var(--text-secondary) !important;">
+                                            <?php echo number_format($avgProgress, 1); ?>% Avg
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:center; border:none; color:var(--text-muted) !important;">
+                                            35%
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:right; border:none; font-weight:700; color:#fff !important;">
+                                            +<?php echo number_format($progressScore, 2); ?>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td style="padding:12px 8px; font-weight:600; border:none; color:#fff !important;">
+                                            <i class="fas fa-check-circle" style="color:#3b82f6; margin-right:8px; width:16px;"></i>Course Completion
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:center; border:none; color:var(--text-secondary) !important;">
+                                            <?php echo number_format($completionRate, 1); ?>% Rate
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:center; border:none; color:var(--text-muted) !important;">
+                                            25%
+                                        </td>
+                                        <td style="padding:12px 8px; text-align:right; border:none; font-weight:700; color:#fff !important;">
+                                            +<?php echo number_format($completionScore, 2); ?>
+                                        </td>
+                                    </tr>
+                                    <tr style="font-weight:700; font-size:14.5px;">
+                                        <td style="padding:16px 8px 0 8px; border:none; color:#fff !important;">
+                                            Overall Score
+                                        </td>
+                                        <td colspan="2" style="padding:16px 8px 0 8px; border:none;"></td>
+                                        <td style="padding:16px 8px 0 8px; text-align:right; border:none; color:<?php echo $gradeColor; ?> !important; font-size:17px;">
+                                            <?php echo number_format($performanceScore, 1); ?> / 100
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row g-4">
                 <!-- Continue Learning -->
                 <div class="col-lg-7">
@@ -168,7 +326,7 @@ include __DIR__ . '/../includes/header.php';
                                         <span style="font-size:12px;font-weight:700;color:var(--primary);white-space:nowrap;"><?php echo $ec['progress']; ?>%</span>
                                     </div>
                                 </div>
-                                <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $ec['course_id']; ?>" class="btn-enroll-sm" style="flex-shrink:0;font-size:12px;padding:6px 14px;">Continue →</a>
+                                <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $ec['course_id']; ?>" class="btn-enroll-sm" style="flex-shrink:0;font-size:12px;padding:6px 14px;">Continue →</a>
                             </div>
                             <?php endforeach; ?>
                             </div>
@@ -237,7 +395,7 @@ include __DIR__ . '/../includes/header.php';
                         </div>
                         <div class="progress-bar-custom"><div class="progress-fill" data-width="<?php echo $ec['progress']; ?>%" style="width:<?php echo $ec['progress']; ?>%;"></div></div>
                         <div style="display:flex;gap:8px;margin-top:14px;">
-                            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $ec['course_id']; ?>" class="btn-enroll-sm" style="flex:1;justify-content:center;">
+                            <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $ec['course_id']; ?>" class="btn-enroll-sm" style="flex:1;justify-content:center;">
                                 <?php echo $ec['progress']>=100 ? '🎉 Review' : 'Continue'; ?> →
                             </a>
                             <?php if ($ec['progress'] >= 100): ?>

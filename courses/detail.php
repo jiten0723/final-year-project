@@ -168,7 +168,7 @@ include __DIR__ . '/../includes/header.php';
                         </div>
 
                         <?php if ($enrolled): ?>
-                            <a href="<?php echo BASE_URL; ?>/dashboard/student.php?tab=courses" class="btn-primary-custom w-100 justify-content-center mb-3" style="font-size:16px;padding:14px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);box-shadow:none;color:var(--primary);">
+                            <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $id; ?>" class="btn-primary-custom w-100 justify-content-center mb-3" style="font-size:16px;padding:14px;">
                                 <i class="fas fa-play-circle"></i> Continue Learning
                             </a>
                             <div style="text-align:center;font-size:13px;color:var(--primary);"><i class="fas fa-check-circle me-1"></i>You're enrolled in this course</div>

@@ -222,7 +222,11 @@ include __DIR__ . '/../includes/header.php';
                        data-rating="<?php echo $rating['avg']; ?>"
                        data-animate>
                         <div class="course-thumbnail">
-                            <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
+                            <?php if (!empty($course['thumbnail'])): ?>
+                                <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                            <?php else: ?>
+                                <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
+                            <?php endif; ?>
                             <span class="course-badge badge-<?php echo $course['type']; ?>"><?php echo strtoupper($course['type']); ?></span>
                             <div class="course-play-btn"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                         </div>

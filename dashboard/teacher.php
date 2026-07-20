@@ -27,9 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_course'])) {
     if ($title && $desc) {
         // Generate slug
         $slug = strtolower(preg_replace('/[^a-z0-9]+/i','-',trim($title))) . '-' . time();
-        $db->prepare("INSERT INTO courses (title,slug,description,short_description,category_id,instructor_id,price,type,level,duration,status)
-                      VALUES (?,?,?,?,?,?,?,?,?,?,'pending')")
-           ->execute([$title,$slug,$desc,$shortDesc,$catId,$uid,$price,$type,$level,$duration]);
+        $thumbnail = trim($_POST['thumbnail'] ?? '');
+        $db->prepare("INSERT INTO courses (title,slug,description,short_description,category_id,instructor_id,price,type,level,duration,thumbnail,status)
+                      VALUES (?,?,?,?,?,?,?,?,?,?,?,'pending')")
+           ->execute([$title,$slug,$desc,$shortDesc,$catId,$uid,$price,$type,$level,$duration,$thumbnail]);
         $newCourseId = $db->lastInsertId();
         $courseMsg = ['type'=>'success','text'=>'Course submitted for admin approval! Course ID: #'.$newCourseId];
     } else {
@@ -37,7 +38,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_course'])) {
     }
 }
 
-// Handle lesson addition
+// Handle course edit
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_course'])) {
+    $editId    = (int)$_POST['course_id'];
+    $title     = trim($_POST['title'] ?? '');
+    $desc      = trim($_POST['description'] ?? '');
+    $shortDesc = trim($_POST['short_description'] ?? '');
+    $catId     = (int)($_POST['category_id'] ?? 0);
+    $price     = (float)($_POST['price'] ?? 0);
+    $type      = $price > 0 ? 'premium' : 'free';
+    $level     = $_POST['level'] ?? 'beginner';
+    $duration  = trim($_POST['duration'] ?? '');
+    $thumbnail = trim($_POST['thumbnail'] ?? '');
+
+    // Verify teacher owns this course
+    $owns = $db->prepare("SELECT id FROM courses WHERE id=? AND instructor_id=?");
+    $owns->execute([$editId, $uid]);
+    if ($owns->fetch() && $title && $desc) {
+        $thumbSql = $thumbnail ? ', thumbnail=?' : '';
+        $params   = [$title, $desc, $shortDesc, $catId, $price, $type, $level, $duration];
+        if ($thumbnail) $params[] = $thumbnail;
+        $params[] = $editId;
+        $db->prepare("UPDATE courses SET title=?, description=?, short_description=?, category_id=?, price=?, type=?, level=?, duration=? $thumbSql WHERE id=?")
+           ->execute($params);
+        $editMsg = ['type'=>'success','text'=>'Course updated successfully!'];
+        // Re-fetch courses
+        $courses = $db->prepare("SELECT co.*, cat.name as category_name, COUNT(DISTINCT e.id) as enrollment_count, COUNT(DISTINCT r.id) as review_count, AVG(r.rating) as avg_rating, COUNT(DISTINCT l.id) as lesson_count FROM courses co LEFT JOIN categories cat ON cat.id=co.category_id LEFT JOIN enrollments e ON e.course_id=co.id LEFT JOIN reviews r ON r.course_id=co.id LEFT JOIN lessons l ON l.course_id=co.id WHERE co.instructor_id=? GROUP BY co.id ORDER BY co.created_at DESC");
+        $courses->execute([$uid]);
+        $courses = $courses->fetchAll();
+    } else {
+        $editMsg = ['type'=>'error','text'=>'Could not update. Check required fields.'];
+    }
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_lesson'])) {
     $courseId    = (int)$_POST['lesson_course_id'];
     $lesTitle    = trim($_POST['lesson_title'] ?? '');
@@ -229,7 +261,10 @@ include __DIR__ . '/../includes/header.php';
                             </span>
                         </td>
                         <td style="padding:14px;">
-                            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $c['id']; ?>" style="font-size:13px;color:var(--primary);">View →</a>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $c['id']; ?>" style="font-size:12px;color:var(--primary);padding:4px 10px;border:1px solid rgba(34,197,94,0.3);border-radius:6px;">View</a>
+                                <a href="?tab=edit&id=<?php echo $c['id']; ?>" style="font-size:12px;color:#fbbf24;padding:4px 10px;border:1px solid rgba(251,191,36,0.3);border-radius:6px;"><i class="fas fa-edit"></i> Edit</a>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -238,8 +273,218 @@ include __DIR__ . '/../includes/header.php';
             </div>
             <?php endif; ?>
         </div>
+        <!-- EDIT COURSE TAB -->
+        <?php elseif ($tab === 'edit'):
+            $editId     = (int)($_GET['id'] ?? 0);
+            $editCourse = null;
+            if ($editId) {
+                $ec = $db->prepare("SELECT * FROM courses WHERE id=? AND instructor_id=?");
+                $ec->execute([$editId, $uid]);
+                $editCourse = $ec->fetch();
+            }
+            if (!$editCourse): ?>
+            <div style="text-align:center;padding:60px;color:var(--text-muted);">
+                <i class="fas fa-exclamation-circle" style="font-size:36px;display:block;margin-bottom:12px;color:#f87171;"></i>
+                Course not found or you don't have permission.
+                <br><a href="?tab=courses" style="color:var(--primary);margin-top:12px;display:inline-block;">← Back to My Courses</a>
+            </div>
+            <?php else: ?>
+        <div class="animate-fade-up">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+                <a href="?tab=courses" style="color:var(--text-muted);font-size:13px;display:flex;align-items:center;gap:6px;"><i class="fas fa-arrow-left"></i> My Courses</a>
+                <span style="color:var(--border);">›</span>
+                <h1 style="font-size:1.4rem;font-weight:900;margin:0;">Edit Course</h1>
+            </div>
 
-        <!-- CREATE COURSE -->
+            <?php if (isset($editMsg)): ?>
+                <div class="alert-custom alert-<?php echo $editMsg['type']; ?> mb-4">
+                    <i class="fas fa-<?php echo $editMsg['type']==='success'?'check':'times'; ?>-circle"></i> <?php echo $editMsg['text']; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="form-card" style="max-width:780px;">
+                <form method="POST">
+                    <input type="hidden" name="edit_course" value="1">
+                    <input type="hidden" name="course_id" value="<?php echo $editCourse['id']; ?>">
+                    <div class="row g-3">
+
+                        <!-- Thumbnail preview + upload -->
+                        <div class="col-12">
+                            <label class="form-label-custom">Course Thumbnail</label>
+                            <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+                                <!-- Current thumbnail -->
+                                <div style="flex-shrink:0;">
+                                    <div id="editThumbPreviewWrap" style="width:180px;height:110px;background:linear-gradient(135deg,#0d1a2e,#0a2010);border-radius:10px;overflow:hidden;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:40px;">
+                                        <?php if (!empty($editCourse['thumbnail'])): ?>
+                                            <img id="editThumbImg" src="<?php echo e($editCourse['thumbnail']); ?>" style="width:100%;height:100%;object-fit:cover;">
+                                        <?php else: ?>
+                                            <span id="editThumbPlaceholderIcon">📚</span>
+                                            <img id="editThumbImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                                        <?php endif; ?>
+                                    </div>
+                                    <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center;">Current thumbnail</div>
+                                </div>
+                                <!-- Upload new -->
+                                <div style="flex:1;min-width:200px;">
+                                    <div id="editThumbBox" onclick="document.getElementById('editThumbFile').click()"
+                                        style="border:2px dashed rgba(34,197,94,0.3);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:rgba(34,197,94,0.03);"
+                                        onmouseover="this.style.borderColor='rgba(34,197,94,0.6)'" onmouseout="this.style.borderColor='rgba(34,197,94,0.3)'">
+                                        <div id="editThumbBoxContent">
+                                            <i class="fas fa-cloud-upload-alt" style="font-size:24px;color:var(--primary);margin-bottom:8px;display:block;"></i>
+                                            <div style="font-size:13px;font-weight:600;color:#fff;">Click to upload new thumbnail</div>
+                                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">JPG, PNG, WEBP — Max 5MB</div>
+                                        </div>
+                                        <div id="editThumbUploading" style="display:none;">
+                                            <i class="fas fa-spinner fa-spin" style="font-size:20px;color:var(--primary);display:block;margin-bottom:6px;"></i>
+                                            <div style="font-size:12px;color:var(--text-muted);">Uploading...</div>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="editThumbFile" accept="image/*" style="display:none;" onchange="uploadEditThumbnail(this)">
+                                    <input type="hidden" name="thumbnail" id="editThumbUrl" value="">
+                                    <div id="editThumbStatus" style="font-size:12px;margin-top:6px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label-custom">Course Title *</label>
+                                <div class="input-wrapper"><i class="fas fa-heading input-icon"></i>
+                                    <input type="text" name="title" class="form-input-custom" value="<?php echo e($editCourse['title']); ?>" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category + Level -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label-custom">Category *</label>
+                                <div class="input-wrapper"><i class="fas fa-tag input-icon"></i>
+                                    <select name="category_id" class="form-input-custom" required>
+                                        <?php foreach ($allCats as $cat): ?>
+                                            <option value="<?php echo $cat['id']; ?>" style="background:#1a2332;color:#fff;"
+                                                <?php echo $cat['id'] == $editCourse['category_id'] ? 'selected' : ''; ?>>
+                                                <?php echo e($cat['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label-custom">Level</label>
+                                <div class="input-wrapper"><i class="fas fa-signal input-icon"></i>
+                                    <select name="level" class="form-input-custom">
+                                        <?php foreach (['beginner','intermediate','advanced'] as $lv): ?>
+                                            <option value="<?php echo $lv; ?>" style="background:#1a2332;color:#fff;"
+                                                <?php echo $editCourse['level'] === $lv ? 'selected' : ''; ?>>
+                                                <?php echo ucfirst($lv); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price + Duration -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label-custom">Price (NPR) — 0 for Free</label>
+                                <div class="input-wrapper"><i class="fas fa-rupee-sign input-icon"></i>
+                                    <input type="number" name="price" class="form-input-custom" value="<?php echo $editCourse['price']; ?>" min="0" step="100">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label-custom">Total Duration</label>
+                                <div class="input-wrapper"><i class="fas fa-clock input-icon"></i>
+                                    <input type="text" name="duration" class="form-input-custom" value="<?php echo e($editCourse['duration']); ?>" placeholder="e.g. 12 hours">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Short Description -->
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label-custom">Short Description</label>
+                                <textarea name="short_description" class="form-input-custom" rows="2" style="padding:13px 16px;resize:vertical;"><?php echo e($editCourse['short_description']); ?></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Full Description -->
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label-custom">Full Description *</label>
+                                <textarea name="description" class="form-input-custom" rows="7" style="padding:13px 16px;resize:vertical;" required><?php echo e($editCourse['description']); ?></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Status notice -->
+                        <div class="col-12">
+                            <?php if ($editCourse['status'] === 'approved'): ?>
+                            <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+                                <i class="fas fa-info-circle me-1" style="color:#f59e0b;"></i>
+                                This course is <strong>approved and live</strong>. Saving changes will keep it live without requiring re-approval.
+                            </div>
+                            <?php else: ?>
+                            <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+                                <i class="fas fa-info-circle me-1" style="color:#3b82f6;"></i>
+                                Status: <strong style="color:#fbbf24;"><?php echo ucfirst($editCourse['status']); ?></strong>. Changes will be saved without changing the current status.
+                            </div>
+                            <?php endif; ?>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <button type="submit" class="btn-primary-custom" style="flex:1;justify-content:center;padding:14px;font-size:15px;">
+                                    <i class="fas fa-save"></i> Save Changes
+                                </button>
+                                <a href="?tab=courses" class="btn-outline-custom" style="padding:14px 20px;">
+                                    Cancel
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+        function uploadEditThumbnail(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+
+            document.getElementById('editThumbBoxContent').style.display = 'none';
+            document.getElementById('editThumbUploading').style.display  = 'block';
+            document.getElementById('editThumbStatus').innerHTML          = '';
+
+            fetch('<?php echo BASE_URL; ?>/api/upload_image.php', { method:'POST', body:formData })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('editThumbUploading').style.display  = 'none';
+                document.getElementById('editThumbBoxContent').style.display = 'block';
+                if (data.success) {
+                    document.getElementById('editThumbUrl').value         = data.url;
+                    document.getElementById('editThumbImg').src           = data.url;
+                    document.getElementById('editThumbImg').style.display = 'block';
+                    if (document.getElementById('editThumbPlaceholderIcon'))
+                        document.getElementById('editThumbPlaceholderIcon').style.display = 'none';
+                    document.getElementById('editThumbStatus').innerHTML  = '<span style="color:#4ade80;"><i class="fas fa-check-circle"></i> New thumbnail uploaded!</span>';
+                } else {
+                    document.getElementById('editThumbStatus').innerHTML  = '<span style="color:#f87171;">❌ ' + data.error + '</span>';
+                }
+            })
+            .catch(() => {
+                document.getElementById('editThumbUploading').style.display  = 'none';
+                document.getElementById('editThumbBoxContent').style.display = 'block';
+                document.getElementById('editThumbStatus').innerHTML         = '<span style="color:#f87171;">❌ Upload failed.</span>';
+            });
+        }
+        </script>
+        <?php endif; ?>
+
         <?php elseif ($tab === 'create'): ?>
         <div class="animate-fade-up">
             <h1 style="font-size:1.5rem;font-weight:900;margin-bottom:24px;"><i class="fas fa-plus-circle text-gradient me-2"></i>Create New Course</h1>
@@ -312,6 +557,31 @@ include __DIR__ . '/../includes/header.php';
                             </div>
                         </div>
                         <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label-custom">Course Thumbnail Image</label>
+                                <!-- Image Upload Box -->
+                                <div id="thumbUploadBox" onclick="document.getElementById('thumbFile').click()"
+                                    style="border:2px dashed rgba(34,197,94,0.3);border-radius:12px;padding:28px;text-align:center;cursor:pointer;background:rgba(34,197,94,0.03);transition:all 0.2s;position:relative;"
+                                    onmouseover="this.style.borderColor='rgba(34,197,94,0.6)'" onmouseout="this.style.borderColor='rgba(34,197,94,0.3)'">
+                                    <div id="thumbPreview" style="display:none;margin-bottom:12px;">
+                                        <img id="thumbImg" src="" style="max-height:160px;border-radius:8px;max-width:100%;">
+                                    </div>
+                                    <div id="thumbPlaceholder">
+                                        <i class="fas fa-image" style="font-size:32px;color:var(--primary);margin-bottom:10px;display:block;"></i>
+                                        <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px;">Click to upload thumbnail</div>
+                                        <div style="font-size:12px;color:var(--text-muted);">JPG, PNG, WEBP — Max 5MB</div>
+                                    </div>
+                                    <div id="thumbUploading" style="display:none;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--primary);margin-bottom:8px;display:block;"></i>
+                                        <div style="font-size:13px;color:var(--text-muted);">Uploading to ImgBB...</div>
+                                    </div>
+                                </div>
+                                <input type="file" id="thumbFile" accept="image/*" style="display:none;" onchange="uploadThumbnail(this)">
+                                <input type="hidden" name="thumbnail" id="thumbUrl">
+                                <div id="thumbError" style="color:#f87171;font-size:12px;margin-top:6px;display:none;"></div>
+                                <div id="thumbSuccess" style="color:#4ade80;font-size:12px;margin-top:6px;display:none;"><i class="fas fa-check-circle"></i> Image uploaded successfully!</div>
+                            </div>
+                        </div>
                             <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
                                 <i class="fas fa-info-circle me-1" style="color:#f59e0b;"></i>
                                 Your course will be submitted for <strong>admin review</strong>. Once approved, it will go live on the platform.
@@ -324,6 +594,43 @@ include __DIR__ . '/../includes/header.php';
                 </form>
             </div>
         </div>
+
+        <script>
+        function uploadThumbnail(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+
+            document.getElementById('thumbPlaceholder').style.display  = 'none';
+            document.getElementById('thumbPreview').style.display       = 'none';
+            document.getElementById('thumbUploading').style.display     = 'block';
+            document.getElementById('thumbError').style.display         = 'none';
+            document.getElementById('thumbSuccess').style.display       = 'none';
+
+            fetch('<?php echo BASE_URL; ?>/api/upload_image.php', { method:'POST', body:formData })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('thumbUploading').style.display = 'none';
+                if (data.success) {
+                    document.getElementById('thumbUrl').value                  = data.url;
+                    document.getElementById('thumbImg').src                    = data.url;
+                    document.getElementById('thumbPreview').style.display      = 'block';
+                    document.getElementById('thumbPlaceholder').style.display  = 'none';
+                    document.getElementById('thumbSuccess').style.display      = 'block';
+                } else {
+                    document.getElementById('thumbPlaceholder').style.display  = 'block';
+                    document.getElementById('thumbError').textContent          = '❌ ' + data.error;
+                    document.getElementById('thumbError').style.display        = 'block';
+                }
+            })
+            .catch(() => {
+                document.getElementById('thumbUploading').style.display        = 'none';
+                document.getElementById('thumbPlaceholder').style.display      = 'block';
+                document.getElementById('thumbError').textContent              = '❌ Upload failed. Try again.';
+                document.getElementById('thumbError').style.display            = 'block';
+            });
+        }
+        </script>
 
         <!-- ADD LESSONS -->
         <?php elseif ($tab === 'lessons'): ?>

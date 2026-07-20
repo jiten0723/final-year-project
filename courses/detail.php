@@ -77,9 +77,9 @@ $related = $db->prepare("
 $related->execute([$course['category_id'], $id]);
 $related = $related->fetchAll();
 
+
 $catIcons = ['Programming'=>'💻','Design'=>'🎨','Business'=>'💼','Music'=>'🎵','Photography'=>'📷','Marketing'=>'📢','Data Science'=>'📊','Personal Dev'=>'🚀'];
 $icon = $catIcons[$course['category_name']] ?? '📚';
-
 $pageTitle = $course['title'];
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -143,8 +143,12 @@ include __DIR__ . '/../includes/header.php';
             <div class="col-lg-5">
                 <div style="position:sticky;top:90px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-lg);">
                     <!-- Preview thumbnail -->
-                    <div style="aspect-ratio:16/9;background:linear-gradient(135deg,#0d1a2e,#0a2010);display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;">
-                        <?php echo $icon; ?>
+                    <div style="aspect-ratio:16/9;background:linear-gradient(135deg,#0d1a2e,#0a2010);display:flex;align-items:center;justify-content:center;font-size:80px;position:relative;overflow:hidden;">
+                        <?php if (!empty($course['thumbnail'])): ?>
+                            <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                        <?php else: ?>
+                            <?php echo $icon; ?>
+                        <?php endif; ?>
                         <div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
                             <a href="#previewSection" onclick="scrollTo('previewSection')" style="width:64px;height:64px;background:var(--gradient-primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;box-shadow:0 4px 20px rgba(34,197,94,0.4);">
                                 <i class="fas fa-play"></i>
@@ -390,7 +394,13 @@ include __DIR__ . '/../includes/header.php';
                 $rr = getCourseRating($rel['id']);
             ?>
             <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $rel['id']; ?>" class="course-card" style="flex-direction:row;padding:12px;gap:12px;">
-                <div style="width:80px;height:70px;background:linear-gradient(135deg,#0d1a2e,#0a2010);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;"><?php echo $icon2; ?></div>
+                <div style="width:80px;height:70px;background:linear-gradient(135deg,#0d1a2e,#0a2010);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden;position:relative;">
+                    <?php if (!empty($rel['thumbnail'])): ?>
+                        <img src="<?php echo e($rel['thumbnail']); ?>" alt="<?php echo e($rel['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                    <?php else: ?>
+                        <?php echo $icon2; ?>
+                    <?php endif; ?>
+                </div>
                 <div>
                     <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-primary);"><?php echo truncate($rel['title'],45); ?></div>
                     <div style="font-size:12px;color:var(--text-muted);"><?php echo e($rel['instructor_name']); ?></div>

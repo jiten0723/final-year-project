@@ -15,6 +15,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <meta name="description" content="EDUCORE - Learn in-demand skills online with expert instructors. Courses in Programming, Design, Business and more.">
     <title><?php echo isset($pageTitle) ? e($pageTitle) . ' | EDUCORE' : 'EDUCORE - Learn Without Limits'; ?></title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="<?php echo BASE_URL; ?>/assets/images/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="<?php echo BASE_URL; ?>/assets/images/favicon.ico">
+
+    <!-- Google Fonts -->
+    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>/assets/images/favicon.ico" type="image/x-icon">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

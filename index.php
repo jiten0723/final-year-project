@@ -225,7 +225,11 @@ include __DIR__ . '/includes/header.php';
                data-rating="<?php echo $rating['avg']; ?>"
                data-animate>
                 <div class="course-thumbnail">
-                    <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
+                    <?php if (!empty($course['thumbnail'])): ?>
+                        <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                    <?php else: ?>
+                        <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
+                    <?php endif; ?>
                     <?php if ($course['is_featured']): ?>
                         <span class="course-badge badge-featured">⭐ Featured</span>
                     <?php endif; ?>
@@ -434,7 +438,11 @@ include __DIR__ . '/includes/header.php';
             ?>
             <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $course['id']; ?>" class="course-card" data-animate>
                 <div class="course-thumbnail">
-                    <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
+                    <?php if (!empty($course['thumbnail'])): ?>
+                        <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                    <?php else: ?>
+                        <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
+                    <?php endif; ?>
                     <span class="course-badge badge-free">FREE</span>
                     <div class="course-play-btn"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 </div>

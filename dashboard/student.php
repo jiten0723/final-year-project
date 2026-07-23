@@ -60,6 +60,7 @@ if ($performanceScore >= 90) {
 // Enrolled courses
 $enrolledCourses = $db->prepare("
     SELECT e.*, co.title, co.type, co.total_lessons, co.price, co.level,
+           co.thumbnail, co.slug,
            u.name as instructor_name, cat.name as category_name
     FROM enrollments e
     JOIN courses co ON co.id = e.course_id
@@ -315,7 +316,13 @@ include __DIR__ . '/../includes/header.php';
                             <?php foreach (array_slice($enrolledCourses,0,3) as $ec):
                                 $icon = $catIcons[$ec['category_name']] ?? '📚'; ?>
                             <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-input);border-radius:var(--radius-md);border:1px solid var(--border);">
-                                <div style="width:52px;height:52px;background:linear-gradient(135deg,#0d1a2e,#0a2010);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;"><?php echo $icon; ?></div>
+                                <div style="width:52px;height:52px;border-radius:10px;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#0d1a2e,#0a2010);display:flex;align-items:center;justify-content:center;font-size:24px;">
+                                    <?php if (!empty($ec['thumbnail'])): ?>
+                                        <img src="<?php echo e($ec['thumbnail']); ?>" alt="<?php echo e($ec['title']); ?>" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+                                    <?php else: ?>
+                                        <?php echo $icon; ?>
+                                    <?php endif; ?>
+                                </div>
                                 <div style="flex:1;min-width:0;">
                                     <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo e($ec['title']); ?></div>
                                     <div style="font-size:12px;color:var(--text-muted);margin:4px 0;">by <?php echo e($ec['instructor_name']); ?></div>
@@ -381,8 +388,15 @@ include __DIR__ . '/../includes/header.php';
                 <?php foreach ($enrolledCourses as $ec):
                     $icon = $catIcons[$ec['category_name']] ?? '📚'; ?>
                 <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
-                    <div style="aspect-ratio:16/9;background:linear-gradient(135deg,#0d1a2e,#0a2010);display:flex;align-items:center;justify-content:center;font-size:52px;position:relative;">
-                        <?php echo $icon; ?>
+                    <div style="aspect-ratio:16/9;position:relative;overflow:hidden;">
+                        <?php if (!empty($ec['thumbnail'])): ?>
+                            <img src="<?php echo e($ec['thumbnail']); ?>" alt="<?php echo e($ec['title']); ?>"
+                                 style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
+                        <?php else: ?>
+                            <div style="width:100%;height:100%;background:linear-gradient(135deg,#0d1a2e,#0a2010);display:flex;align-items:center;justify-content:center;font-size:52px;">
+                                <?php echo $icon; ?>
+                            </div>
+                        <?php endif; ?>
                         <span class="course-badge badge-<?php echo $ec['type']; ?>" style="position:absolute;top:10px;right:10px;"><?php echo strtoupper($ec['type']); ?></span>
                     </div>
                     <div style="padding:18px;">
@@ -482,9 +496,14 @@ include __DIR__ . '/../includes/header.php';
                         <div style="font-size:12px;color:var(--primary);margin-bottom:16px;font-weight:600;"><?php echo e($user['name']); ?></div>
                         <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">Issued: <?php echo date('F d, Y', strtotime($cert['issued_at'])); ?></div>
                         <div style="font-size:10px;color:var(--text-muted);background:rgba(255,255,255,0.04);padding:6px 12px;border-radius:6px;margin-bottom:16px;font-family:monospace;">ID: <?php echo e($cert['certificate_code']); ?></div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
                         <a href="<?php echo BASE_URL; ?>/certificates/generate.php?course_id=<?php echo $cert['course_id']; ?>" class="btn-enroll-sm">
                             <i class="fas fa-eye"></i> View Certificate
                         </a>
+                        <a href="<?php echo BASE_URL; ?>/certificates/verify/<?php echo e($cert['certificate_code']); ?>" class="btn-enroll-sm" style="background:rgba(34,197,94,0.08);color:var(--primary);border:1px solid rgba(34,197,94,0.3);" target="_blank">
+                            <i class="fas fa-shield-alt"></i> Verify
+                        </a>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -553,7 +572,7 @@ include __DIR__ . '/../includes/header.php';
                             ? '<span class="course-price price-free">FREE</span>'
                             : `<span class="course-price price-paid">NPR ${Number(c.price).toLocaleString()}</span>`;
                         return `
-                        <a href="${baseUrl}/courses/detail.php?id=${c.id}" class="course-card">
+                        <a href="${baseUrl}/courses/${c.slug}" class="course-card">
                             <div class="course-thumbnail">
                                 <div class="course-thumbnail-placeholder">${c.icon}</div>
                                 <span class="course-badge badge-${c.type}">${c.type.toUpperCase()}</span>

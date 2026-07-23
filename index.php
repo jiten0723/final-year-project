@@ -61,9 +61,13 @@ include __DIR__ . '/includes/header.php';
     <div class="hero-orb hero-orb1"></div>
     <div class="hero-orb hero-orb2"></div>
 
-    <div class="container position-relative" style="z-index:2;">
+    <!-- <div class="container position-relative" style="z-index:2;">
         <div class="row align-items-center g-5">
-            <div class="col-lg-6">
+            <div class="col-lg-6"> -->
+    <div class="container position-relative" style="z-index:2;">
+        
+        <div class="row align-items-center justify-content-center">
+        <div class="col-lg-10 col-xl-9 mx-auto text-center">
                 <div class="hero-badge">
                     <span class="hero-badge-dot"></span>
                     #1 Online Learning Platform in Nepal
@@ -74,12 +78,12 @@ include __DIR__ . '/includes/header.php';
                     <span class="hero-gradient-text">Actually Matter</span>
                 </h1>
 
-                <p class="hero-subtitle">
+                <p class="hero-subtitle" style="margin-left:auto;margin-right:auto;">
                     Join 50,000+ learners mastering programming, design, business and more.
                     Expert-led courses at your own pace — free and premium.
                 </p>
 
-                <div class="hero-actions">
+                <div class="hero-actions" style="justify-content:center;">
                     <a href="<?php echo BASE_URL; ?>/courses/index.php" class="btn-hero-primary">
                         <i class="fas fa-rocket"></i> Start Learning Free
                     </a>
@@ -88,23 +92,23 @@ include __DIR__ . '/includes/header.php';
                     </a>
                 </div>
 
-                <div class="hero-stats">
-                    <div class="hero-stat-item">
+                <div class="hero-stats" style="justify-content:center;">
+                    <div class="hero-stat-item" style="align-items:center;">
                         <span class="hero-stat-num" data-count="<?php echo $stats['students']; ?>"><?php echo number_format($stats['students']); ?>+</span>
                         <span class="hero-stat-label">Students</span>
                     </div>
-                    <div class="hero-stat-item">
+                    <div class="hero-stat-item" style="align-items:center;">
                         <span class="hero-stat-num" data-count="<?php echo $stats['courses']; ?>"><?php echo $stats['courses']; ?>+</span>
                         <span class="hero-stat-label">Courses</span>
                     </div>
-                    <div class="hero-stat-item">
+                    <div class="hero-stat-item" style="align-items:center;">
                         <span class="hero-stat-num" data-count="<?php echo $stats['teachers']; ?>"><?php echo $stats['teachers']; ?>+</span>
                         <span class="hero-stat-label">Expert Teachers</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-6 d-none d-lg-block">
+            <!-- <div class="col-lg-6 d-none d-lg-block">
                 <div class="hero-visual">
                     <div class="hero-card-float">
                         <div class="d-flex align-items-center gap-3 mb-4">
@@ -140,17 +144,17 @@ include __DIR__ . '/includes/header.php';
                     </div>
 
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 
     <!-- Scroll indicator -->
-    <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);text-align:center;cursor:pointer;" onclick="scrollTo('categories')">
+    <!-- <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);text-align:center;cursor:pointer;" onclick="scrollTo('categories')">
         <div style="color:var(--text-muted);font-size:12px;margin-bottom:6px;">Scroll to explore</div>
         <div style="width:24px;height:40px;border:2px solid var(--border);border-radius:20px;margin:0 auto;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;">
             <div style="width:4px;height:8px;background:var(--primary);border-radius:2px;animation:scrollDot 1.5s infinite;"></div>
         </div>
-    </div>
+    </div> -->
 </section>
 
 <style>
@@ -217,7 +221,7 @@ include __DIR__ . '/includes/header.php';
                 $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $course['id']) : false;
                 $icon = $catIcons[$course['category_name']] ?? '📚';
             ?>
-            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $course['id']; ?>"
+            <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>"
                class="course-card"
                data-title="<?php echo e(strtolower($course['title'])); ?>"
                data-category="<?php echo e(strtolower($course['type'])); ?>"
@@ -226,7 +230,7 @@ include __DIR__ . '/includes/header.php';
                data-animate>
                 <div class="course-thumbnail">
                     <?php if (!empty($course['thumbnail'])): ?>
-                        <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                        <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>"  style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;" loading = "lazy">
                     <?php else: ?>
                         <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
                     <?php endif; ?>
@@ -385,7 +389,7 @@ include __DIR__ . '/includes/header.php';
                 ).join('');
 
                 return `
-                <a href="${baseUrl}/courses/detail.php?id=${c.id}" class="course-card" data-animate>
+                <a href="${baseUrl}/courses/${c.slug}" class="course-card" data-animate>
                     <div class="course-thumbnail">
                         <div class="course-thumbnail-placeholder">${c.icon}</div>
                         <span class="course-badge badge-${c.type}">${c.type.toUpperCase()}</span>
@@ -436,10 +440,10 @@ include __DIR__ . '/includes/header.php';
                 $rating = getCourseRating($course['id']);
                 $icon = $catIcons[$course['category_name']] ?? '📚';
             ?>
-            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $course['id']; ?>" class="course-card" data-animate>
+            <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>" class="course-card" data-animate>
                 <div class="course-thumbnail">
                     <?php if (!empty($course['thumbnail'])): ?>
-                        <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+                        <img src="<?php echo e($course['thumbnail']); ?>" alt="<?php echo e($course['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;" loading = "lazy">
                     <?php else: ?>
                         <div class="course-thumbnail-placeholder"><?php echo $icon; ?></div>
                     <?php endif; ?>
@@ -536,4 +540,22 @@ include __DIR__ . '/includes/header.php';
     </div>
 </section>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php
+// Use role-specific footer, fall back to public footer
+if (isLoggedIn() && $_SESSION['user_role'] === 'teacher') {
+    // Load teacher stats for the footer stats panel
+    $uid = $_SESSION['user_id'];
+    $totalCourses    = $db->prepare("SELECT COUNT(*) FROM courses WHERE instructor_id=?"); $totalCourses->execute([$uid]); $totalCourses = (int)$totalCourses->fetchColumn();
+    $totalStudents   = $db->prepare("SELECT COUNT(DISTINCT e.user_id) FROM enrollments e JOIN courses co ON co.id=e.course_id WHERE co.instructor_id=?"); $totalStudents->execute([$uid]); $totalStudents = (int)$totalStudents->fetchColumn();
+    $footerAvgRating = $db->prepare("SELECT ROUND(AVG(r.rating),1) FROM reviews r JOIN courses co ON co.id=r.course_id WHERE co.instructor_id=?"); $footerAvgRating->execute([$uid]); $footerAvgRating = $footerAvgRating->fetchColumn() ?: '—';
+    $footerCertCount = $db->prepare("SELECT COUNT(*) FROM certificates cert JOIN courses co ON co.id=cert.course_id WHERE co.instructor_id=?"); $footerCertCount->execute([$uid]); $footerCertCount = (int)$footerCertCount->fetchColumn();
+    $teacherFooter = true;
+} elseif (isLoggedIn() && $_SESSION['user_role'] === 'admin') {
+    $adminFooter = true;
+    $adminFooterStats = [
+        'total_users'   => $db->query("SELECT COUNT(*) FROM users")->fetchColumn(),
+        'total_courses' => $db->query("SELECT COUNT(*) FROM courses")->fetchColumn(),
+    ];
+}
+include __DIR__ . '/includes/footer.php';
+?>

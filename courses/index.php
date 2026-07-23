@@ -211,10 +211,11 @@ include __DIR__ . '/../includes/header.php';
                 <div class="courses-grid" id="coursesGrid">
                     <?php foreach ($courses as $course):
                         $rating  = getCourseRating($course['id']);
-                        $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $course['id']) : false;
+                        $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $course['slug']) : false;
                         $icon = $catIcons[$course['category_name']] ?? '📚';
                     ?>
-                    <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $course['id']; ?>"
+                    
+                    <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>"
                        class="course-card"
                        data-title="<?php echo e(strtolower($course['title'])); ?>"
                        data-category="<?php echo e($course['type']); ?>"

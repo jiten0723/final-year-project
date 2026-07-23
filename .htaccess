@@ -1,0 +1,42 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /edu-core/
+
+    # Skip rewriting if the target is an actual file or directory
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 1. ── Quiz Folder ────────────────────────────────────────────────────────
+    RewriteRule ^quiz/(.+)$ quiz/index.php [L,QSA]
+
+    # 2. ── Course Types (free/paid) ──────────────────────────────────────────
+    # Maps 'courses/free' -> 'courses/index.php?type=free'
+    RewriteRule ^courses/(free|paid)/?$ courses/index.php?type=$1 [L,QSA]
+
+    # 3. ── Enrolled Course Slugs ──────────────────────────────────────────────
+    # Maps 'courses/enrolled/course-slug' -> 'courses/detail.php?slug=course-slug'
+    RewriteRule ^courses/enrolled/([^/.]+)/?$ courses/detail.php?slug=$1 [L,QSA]
+
+    # 4. ── Legacy Course Slugs (Your existing matching rule) ──────────────────
+    # Maps 'courses/course-slug' -> 'courses/detail.php?slug=course-slug'
+    RewriteRule ^courses/([^/.]+)/?$ courses/detail.php?slug=$1 [L,QSA]
+
+    # 5. ── Courses folder fallback ────────────────────────────────────────────
+    # Catch-all for anything else inside courses/ -> courses/index.php
+    RewriteRule ^courses/(.*)$ courses/index.php [L,QSA]
+
+    # 6. ── Certificate Verification clean URL ────────────────────────────────
+    # Maps 'certificates/verify/EDUCORE-XXXXXX' -> 'certificates/verify.php?code=EDUCORE-XXXXXX'
+    RewriteRule ^certificates/verify/([A-Za-z0-9_-]+)/?$ certificates/verify.php?code=$1 [L,QSA]
+
+    # Maps 'certificates/verify' (no code) -> 'certificates/verify.php'
+    RewriteRule ^certificates/verify/?$ certificates/verify.php [L,QSA]
+
+    # 7. ── Certificate Generator clean URL ───────────────────────────────────
+    # Maps 'certificates/generate/course-slug' -> 'certificates/generate.php?slug=course-slug'
+    RewriteRule ^certificates/generate/([^/.]+)/?$ certificates/generate.php?slug=$1 [L,QSA]
+
+    # Maps 'certificates/generate' (no slug) -> redirect to dashboard
+    RewriteRule ^certificates/generate/?$ dashboard/student.php?tab=certificates [L,QSA]
+</IfModule>

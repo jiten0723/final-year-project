@@ -25,7 +25,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -53,7 +53,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
 </head>
 <?php
 // Add page-specific body classes (e.g., admin page)
@@ -70,6 +70,7 @@ $bodyClasses = 'bg-gray-950 text-white';
             <span class="logo-text">EDU<span class="logo-accent">CORE</span></span>
         </a>
 
+        <?php if (!isset($minimalHeader) || !$minimalHeader): ?>
         <!-- Search Bar -->
         <div class="nav-search-wrap d-none d-lg-flex">
             <form action="<?php echo BASE_URL; ?>/courses/index.php" method="GET" class="nav-search-form">
@@ -84,9 +85,9 @@ $bodyClasses = 'bg-gray-950 text-white';
 
         <!-- Nav Links -->
         <div class="nav-links d-none d-xl-flex">
-            <a href="<?php echo BASE_URL; ?>/courses/index.php" class="nav-link-item <?php echo $currentPage=='index.php' && strpos($_SERVER['PHP_SELF'],'courses') !== false ? 'active':'' ?>">Explore</a>
+            <a href="<?php echo BASE_URL; ?>/courses/" class="nav-link-item <?php echo $currentPage=='index.php' && strpos($_SERVER['PHP_SELF'],'courses') !== false ? 'active':'' ?>">Explore</a>
             <a href="<?php echo BASE_URL; ?>/courses/index.php?type=free" class="nav-link-item">Free Courses</a>
-            <a href="<?php echo BASE_URL; ?>/quiz/index.php" class="nav-link-item">Quizzes</a>
+            <a href="<?php echo BASE_URL; ?>/quiz/" class="nav-link-item">Quizzes</a>
         </div>
 
         <!-- Right Section -->
@@ -154,9 +155,11 @@ $bodyClasses = 'bg-gray-950 text-white';
                 <i class="fas fa-bars"></i>
             </button>
         </div>
+        <?php endif; ?>
     </div>
 
     <!-- Mobile Menu -->
+    <?php if (!isset($minimalHeader) || !$minimalHeader): ?>
     <div class="mobile-menu" id="mobileMenu">
         <form action="<?php echo BASE_URL; ?>/courses/index.php" method="GET" class="mobile-search">
             <i class="fas fa-search"></i>
@@ -173,4 +176,5 @@ $bodyClasses = 'bg-gray-950 text-white';
             <a href="<?php echo BASE_URL; ?>/register.php">Register</a>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 </nav>

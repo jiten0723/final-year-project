@@ -249,7 +249,7 @@ include __DIR__ . '/../includes/header.php';
                                 <i class="fas fa-times"></i> Reject
                             </button>
                         </form>
-                        <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $c['id']; ?>" style="text-align:center;font-size:13px;color:var(--primary);">Preview →</a>
+                        <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($c['slug']); ?>" style="text-align:center;font-size:13px;color:var(--primary);">Preview →</a>
                     </div>
                 </div>
             </div>
@@ -393,4 +393,11 @@ include __DIR__ . '/../includes/header.php';
     </main>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php
+$adminFooter = true;
+$adminFooterStats = [
+    'total_users'   => $db->query("SELECT COUNT(*) FROM users")->fetchColumn(),
+    'total_courses' => $db->query("SELECT COUNT(*) FROM courses")->fetchColumn(),
+];
+include __DIR__ . '/../includes/footer.php';
+?>

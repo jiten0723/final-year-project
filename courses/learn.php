@@ -25,7 +25,7 @@ if (!$course) { header("Location: " . BASE_URL . "/courses/index.php"); exit(); 
 
 // Must be enrolled
 if (!isEnrolled($_SESSION['user_id'], $courseId)) {
-    header("Location: " . BASE_URL . "/courses/detail.php?id=$courseId");
+    header("Location: " . BASE_URL . "/courses/" . $course['slug']);
     exit();
 }
 
@@ -35,7 +35,7 @@ $lessonsStmt->execute([$courseId]);
 $lessons = $lessonsStmt->fetchAll();
 
 if (empty($lessons)) {
-    header("Location: " . BASE_URL . "/courses/detail.php?id=$courseId");
+    header("Location: " . BASE_URL . "/courses/" . $course['slug']);
     exit();
 }
 
@@ -302,7 +302,7 @@ include __DIR__ . '/../includes/header.php';
     <!-- ── Sidebar ── -->
     <aside class="learn-sidebar">
         <div class="learn-sidebar-header">
-            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $courseId; ?>" style="font-size:11px;color:var(--primary);display:flex;align-items:center;gap:5px;margin-bottom:10px;text-decoration:none;">
+            <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>" style="font-size:11px;color:var(--primary);display:flex;align-items:center;gap:5px;margin-bottom:10px;text-decoration:none;">
                 <i class="fas fa-arrow-left"></i> Back to Course
             </a>
             <div class="learn-sidebar-title"><?php echo e($course['title']); ?></div>
@@ -351,7 +351,7 @@ include __DIR__ . '/../includes/header.php';
         <!-- Top bar -->
         <div class="learn-topbar">
             <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $courseId; ?>" style="color:var(--text-muted);font-size:13px;text-decoration:none;white-space:nowrap;"><i class="fas fa-arrow-left me-1"></i> Course</a>
+                <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>" style="color:var(--text-muted);font-size:13px;text-decoration:none;white-space:nowrap;"><i class="fas fa-arrow-left me-1"></i> Course</a>
                 <span style="color:var(--border);">›</span>
                 <span style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo e($lesson['title']); ?></span>
             </div>

@@ -93,6 +93,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_lesson'])) {
     }
 }
 
+// Handle signature upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_signature'])) {
+    $sigUrl = trim($_POST['signature_url'] ?? '');
+    if ($sigUrl) {
+        $db->prepare("UPDATE users SET signature_image=? WHERE id=?")
+           ->execute([$sigUrl, $uid]);
+        $sigMsg = ['type'=>'success','text'=>'Signature saved successfully!'];
+        // Refresh user
+        $user = getCurrentUser();
+    } else {
+        $sigMsg = ['type'=>'error','text'=>'No signature image provided.'];
+    }
+}
+
 // Teacher's courses
 $courses = $db->prepare("
     SELECT co.*, cat.name as category_name,
@@ -121,6 +135,17 @@ $totalRevenue   = $db->prepare("SELECT COALESCE(SUM(p.amount),0) FROM payments p
 $allCats = $db->query("SELECT * FROM categories ORDER BY name")->fetchAll();
 
 $pageTitle = "Teacher Dashboard";
+$teacherFooter = true;
+
+// Stats for teacher footer
+$footerAvgRating   = $db->prepare("SELECT ROUND(AVG(r.rating),1) FROM reviews r JOIN courses co ON co.id=r.course_id WHERE co.instructor_id=?");
+$footerAvgRating->execute([$uid]);
+$footerAvgRating = $footerAvgRating->fetchColumn() ?: '—';
+
+$footerCertCount   = $db->prepare("SELECT COUNT(*) FROM certificates cert JOIN courses co ON co.id=cert.course_id WHERE co.instructor_id=?");
+$footerCertCount->execute([$uid]);
+$footerCertCount = (int)$footerCertCount->fetchColumn();
+
 include __DIR__ . '/../includes/header.php';
 ?>
 
@@ -140,6 +165,7 @@ include __DIR__ . '/../includes/header.php';
             <a href="?tab=lessons"     class="sidebar-link <?php echo $tab==='lessons'?'active':''; ?>"><i class="fas fa-film"></i> Add Lessons</a>
             <a href="?tab=students"    class="sidebar-link <?php echo $tab==='students'?'active':''; ?>"><i class="fas fa-users"></i> Students</a>
             <a href="?tab=earnings"    class="sidebar-link <?php echo $tab==='earnings'?'active':''; ?>"><i class="fas fa-rupee-sign"></i> Earnings</a>
+            <a href="?tab=profile"    class="sidebar-link <?php echo $tab==='profile'?'active':''; ?>"><i class="fas fa-signature"></i> Signature</a>
             <div style="height:1px;background:var(--border);margin:12px 0;"></div>
             <a href="<?php echo BASE_URL; ?>/courses/index.php"    class="sidebar-link"><i class="fas fa-compass"></i> Browse Courses</a>
             <a href="<?php echo BASE_URL; ?>/logout.php"           class="sidebar-link" style="color:#f87171;"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -201,7 +227,7 @@ include __DIR__ . '/../includes/header.php';
                             </span>
                         </td>
                         <td style="padding:14px 12px;">
-                            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $c['id']; ?>" style="font-size:13px;color:var(--primary);">View →</a>
+                            <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($c['slug']); ?>" style="font-size:13px;color:var(--primary);">View →</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -262,7 +288,7 @@ include __DIR__ . '/../includes/header.php';
                         </td>
                         <td style="padding:14px;">
                             <div style="display:flex;gap:8px;align-items:center;">
-                                <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $c['id']; ?>" style="font-size:12px;color:var(--primary);padding:4px 10px;border:1px solid rgba(34,197,94,0.3);border-radius:6px;">View</a>
+                                <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($c['slug']); ?>" style="font-size:12px;color:var(--primary);padding:4px 10px;border:1px solid rgba(34,197,94,0.3);border-radius:6px;">View</a>
                                 <a href="?tab=edit&id=<?php echo $c['id']; ?>" style="font-size:12px;color:#fbbf24;padding:4px 10px;border:1px solid rgba(251,191,36,0.3);border-radius:6px;"><i class="fas fa-edit"></i> Edit</a>
                             </div>
                         </td>
@@ -812,6 +838,136 @@ include __DIR__ . '/../includes/header.php';
                 <div style="text-align:center;padding:48px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);color:var(--text-muted);">No revenue transactions yet.</div>
             <?php endif; ?>
         </div>
+        <?php elseif ($tab === 'profile'): ?>
+        <!-- SIGNATURE TAB -->
+        <div class="animate-fade-up">
+            <h1 style="font-size:1.5rem;font-weight:900;margin-bottom:6px;"><i class="fas fa-signature me-2 text-gradient"></i>My Signature</h1>
+            <p style="color:var(--text-muted);font-size:14px;margin-bottom:28px;">Upload your signature image. It will appear on all certificates issued for your courses.</p>
+
+            <?php if (isset($sigMsg)): ?>
+            <div class="alert-custom alert-<?php echo $sigMsg['type']; ?> mb-4">
+                <i class="fas fa-<?php echo $sigMsg['type']==='success'?'check':'times'; ?>-circle"></i> <?php echo $sigMsg['text']; ?>
+            </div>
+            <?php endif; ?>
+
+            <div class="form-card" style="max-width:600px;">
+
+                <!-- Current signature preview -->
+                <?php $currentSig = $user['signature_image'] ?? ''; ?>
+                <div style="margin-bottom:28px;">
+                    <label class="form-label-custom">Current Signature</label>
+                    <div id="currentSigWrap" style="min-height:90px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;">
+                        <?php if ($currentSig): ?>
+                            <img id="currentSigImg" src="<?php echo e($currentSig); ?>" alt="Signature"
+                                 style="max-height:80px;max-width:100%;object-fit:contain;filter:drop-shadow(0 0 6px rgba(34,197,94,0.2));">
+                        <?php else: ?>
+                            <div id="noSigMsg" style="color:var(--text-muted);font-size:13px;text-align:center;">
+                                <i class="fas fa-signature" style="font-size:28px;margin-bottom:8px;display:block;opacity:0.4;"></i>
+                                No signature uploaded yet
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Upload new signature -->
+                <form method="POST">
+                    <input type="hidden" name="save_signature" value="1">
+                    <input type="hidden" name="signature_url" id="sigUrlInput" value="">
+
+                    <label class="form-label-custom">Upload New Signature</label>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+                        <i class="fas fa-lightbulb" style="color:#fbbf24;"></i>
+                        Sign on white paper, photograph or scan it, then upload. PNG with transparent background works best.
+                    </p>
+
+                    <!-- Drop zone -->
+                    <div id="sigDropZone" onclick="document.getElementById('sigFileInput').click()"
+                         style="border:2px dashed rgba(34,197,94,0.3);border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:rgba(34,197,94,0.03);transition:all 0.2s;margin-bottom:16px;"
+                         onmouseover="this.style.borderColor='rgba(34,197,94,0.6)';this.style.background='rgba(34,197,94,0.06)'"
+                         onmouseout="this.style.borderColor='rgba(34,197,94,0.3)';this.style.background='rgba(34,197,94,0.03)'">
+
+                        <div id="sigDropContent">
+                            <i class="fas fa-signature" style="font-size:32px;color:var(--primary);margin-bottom:10px;display:block;"></i>
+                            <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:4px;">Click to upload signature image</div>
+                            <div style="font-size:12px;color:var(--text-muted);">PNG (transparent), JPG, WEBP — Max 5MB</div>
+                        </div>
+
+                        <div id="sigUploading" style="display:none;">
+                            <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--primary);margin-bottom:8px;display:block;"></i>
+                            <div style="font-size:13px;color:var(--text-muted);">Uploading...</div>
+                        </div>
+
+                        <div id="sigPreviewWrap" style="display:none;">
+                            <img id="sigPreviewImg" src="" alt="Preview"
+                                 style="max-height:80px;max-width:280px;object-fit:contain;border-radius:8px;margin-bottom:8px;">
+                            <div style="font-size:12px;color:#4ade80;"><i class="fas fa-check-circle"></i> Signature ready — click Save below</div>
+                        </div>
+                    </div>
+
+                    <input type="file" id="sigFileInput" accept="image/*" style="display:none;" onchange="uploadSignature(this)">
+                    <div id="sigError" style="color:#f87171;font-size:12px;margin-bottom:12px;display:none;"></div>
+
+                    <button type="submit" id="sigSaveBtn" class="btn-primary-custom w-100 justify-content-center" style="padding:13px;font-size:15px;" disabled>
+                        <i class="fas fa-save"></i> Save Signature
+                    </button>
+                </form>
+
+                <!-- Remove signature -->
+                <?php if ($currentSig): ?>
+                <form method="POST" style="margin-top:12px;" onsubmit="return confirm('Remove your current signature?')">
+                    <input type="hidden" name="save_signature" value="1">
+                    <input type="hidden" name="signature_url" value="">
+                    <button type="submit" style="width:100%;padding:11px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);color:#f87171;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-trash-alt"></i> Remove Current Signature
+                    </button>
+                </form>
+                <?php endif; ?>
+
+            </div><!-- end form-card -->
+        </div>
+
+        <script>
+        function uploadSignature(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+
+            document.getElementById('sigDropContent').style.display  = 'none';
+            document.getElementById('sigPreviewWrap').style.display  = 'none';
+            document.getElementById('sigUploading').style.display    = 'block';
+            document.getElementById('sigError').style.display        = 'none';
+
+            fetch('<?php echo BASE_URL; ?>/api/upload_image.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('sigUploading').style.display = 'none';
+                if (data.success) {
+                    document.getElementById('sigUrlInput').value           = data.url;
+                    document.getElementById('sigPreviewImg').src           = data.url;
+                    document.getElementById('sigPreviewWrap').style.display = 'block';
+                    document.getElementById('sigSaveBtn').disabled          = false;
+                    // Update current preview too
+                    const cur = document.getElementById('currentSigImg');
+                    const noMsg = document.getElementById('noSigMsg');
+                    if (cur) { cur.src = data.url; }
+                    else if (noMsg) {
+                        noMsg.outerHTML = `<img id="currentSigImg" src="${data.url}" style="max-height:80px;max-width:100%;object-fit:contain;">`;
+                    }
+                } else {
+                    document.getElementById('sigDropContent').style.display = 'block';
+                    document.getElementById('sigError').textContent = '❌ ' + data.error;
+                    document.getElementById('sigError').style.display = 'block';
+                }
+            })
+            .catch(() => {
+                document.getElementById('sigUploading').style.display    = 'none';
+                document.getElementById('sigDropContent').style.display  = 'block';
+                document.getElementById('sigError').textContent          = '❌ Upload failed. Try again.';
+                document.getElementById('sigError').style.display        = 'block';
+            });
+        }
+        </script>
+
         <?php endif; ?>
     </main>
 </div>

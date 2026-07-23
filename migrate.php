@@ -48,6 +48,18 @@ try {
 }
 
 try {
+    // 5. Add signature_image column to users (teacher signature for certificates)
+    $db->exec("ALTER TABLE users ADD COLUMN signature_image VARCHAR(255) DEFAULT NULL");
+    $results[] = ['status' => 'ok', 'msg' => 'Column signature_image added to users'];
+} catch (Exception $e) {
+    if (strpos($e->getMessage(), 'Duplicate column') !== false) {
+        $results[] = ['status' => 'ok', 'msg' => 'Column signature_image already exists in users'];
+    } else {
+        $results[] = ['status' => 'error', 'msg' => 'signature_image column: ' . $e->getMessage()];
+    }
+}
+
+try {
     // 4. Add trusted_devices table (cookie-based OTP skip)
     $db->exec("
         CREATE TABLE IF NOT EXISTS trusted_devices (

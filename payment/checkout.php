@@ -14,7 +14,7 @@ $course = $course->fetch();
 
 if (!$course) { header("Location: " . BASE_URL . "/courses/index.php"); exit(); }
 if ($course['type'] === 'free') { header("Location: " . BASE_URL . "/courses/enroll.php?id=$courseId"); exit(); }
-if (isEnrolled($_SESSION['user_id'], $courseId)) { header("Location: " . BASE_URL . "/courses/detail.php?id=$courseId"); exit(); }
+if (isEnrolled($_SESSION['user_id'], $courseId)) { header("Location: " . BASE_URL . "/courses/" . $course['slug']); exit(); }
 
 $pageTitle = "Checkout — " . $course['title'];
 include __DIR__ . '/../includes/header.php';
@@ -57,7 +57,7 @@ include __DIR__ . '/../includes/header.php';
         <!-- Payment Methods -->
         <div class="col-lg-7 order-lg-1">
             <div style="margin-bottom:28px;">
-                <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $courseId; ?>" style="color:var(--text-muted);font-size:14px;display:inline-flex;align-items:center;gap:6px;">
+                <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>" style="color:var(--text-muted);font-size:14px;display:inline-flex;align-items:center;gap:6px;">
                     <i class="fas fa-arrow-left"></i> Back to course
                 </a>
             </div>

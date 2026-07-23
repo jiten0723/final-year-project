@@ -24,7 +24,7 @@ if ($course['type'] === 'premium' && !$preview && !isEnrolled($_SESSION['user_id
 
 // Check already enrolled
 if (isEnrolled($_SESSION['user_id'], $courseId)) {
-    header("Location: " . BASE_URL . "/courses/detail.php?id=$courseId&already=1");
+    header("Location: " . BASE_URL . "/courses/" . $course['slug'] . "?already=1");
     exit();
 }
 
@@ -41,9 +41,9 @@ try {
     $db->prepare("INSERT INTO notifications (user_id, message, type) VALUES (?, ?, 'success')")
        ->execute([$_SESSION['user_id'], "You've enrolled in \"" . $course['title'] . "\". Happy learning! 🎉"]);
 
-    header("Location: " . BASE_URL . "/courses/detail.php?id=$courseId&enrolled=1");
+    header("Location: " . BASE_URL . "/courses/" . $course['slug'] . "?enrolled=1");
     exit();
 } catch (Exception $e) {
-    header("Location: " . BASE_URL . "/courses/detail.php?id=$courseId&error=1");
+    header("Location: " . BASE_URL . "/courses/" . $course['slug'] . "?error=1");
     exit();
 }

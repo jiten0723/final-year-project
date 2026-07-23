@@ -5,21 +5,45 @@
 require_once __DIR__ . '/../includes/auth.php';
 
 $db = getDB();
-$id = (int)($_GET['id'] ?? 0);
-if (!$id) { header("Location: " . BASE_URL . "/courses/index.php"); exit(); }
 
-$course = $db->prepare("
-    SELECT co.*, u.name as instructor_name, u.bio as instructor_bio,
-           cat.name as category_name, cat.slug as category_slug
-    FROM courses co
-    JOIN users u ON u.id = co.instructor_id
-    LEFT JOIN categories cat ON cat.id = co.category_id
-    WHERE co.id = ? AND co.status = 'approved'
-");
-$course->execute([$id]);
-$course = $course->fetch();
+// Support both slug (clean URL) and legacy ?id= for backwards compatibility
+$slug = trim($_GET['slug'] ?? '');
+$id   = (int)($_GET['id'] ?? 0);
+
+if ($slug) {
+    $course = $db->prepare("
+        SELECT co.*, u.name as instructor_name, u.bio as instructor_bio,
+               cat.name as category_name, cat.slug as category_slug
+        FROM courses co
+        JOIN users u ON u.id = co.instructor_id
+        LEFT JOIN categories cat ON cat.id = co.category_id
+        WHERE co.slug = ? AND co.status = 'approved'
+    ");
+    $course->execute([$slug]);
+    $course = $course->fetch();
+} elseif ($id) {
+    // Legacy numeric id — redirect to clean slug URL if course found
+    $course = $db->prepare("
+        SELECT co.*, u.name as instructor_name, u.bio as instructor_bio,
+               cat.name as category_name, cat.slug as category_slug
+        FROM courses co
+        JOIN users u ON u.id = co.instructor_id
+        LEFT JOIN categories cat ON cat.id = co.category_id
+        WHERE co.id = ? AND co.status = 'approved'
+    ");
+    $course->execute([$id]);
+    $course = $course->fetch();
+    if ($course) {
+        header("Location: " . BASE_URL . "/courses/" . $course['slug'], true, 301);
+        exit();
+    }
+} else {
+    header("Location: " . BASE_URL . "/courses/index.php"); exit();
+}
+
 if (!$course) { header("Location: " . BASE_URL . "/courses/index.php"); exit(); }
 
+$id       = $course['id']; // numeric id for DB queries
 $rating   = getCourseRating($id);
 $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $id) : false;
 
@@ -56,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         else {
             $db->prepare("INSERT INTO reviews (user_id,course_id,rating,review) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE rating=VALUES(rating),review=VALUES(review)")
                ->execute([$_SESSION['user_id'], $id, $rating_val, $review_txt]);
-            header("Location: detail.php?id=$id&reviewed=1"); exit();
+            header("Location: " . BASE_URL . "/courses/" . $course['slug'] . "?reviewed=1"); exit();
         }
     }
 }
@@ -393,7 +417,7 @@ include __DIR__ . '/../includes/header.php';
                 $icon2 = $catIcons[$course['category_name']] ?? '📚';
                 $rr = getCourseRating($rel['id']);
             ?>
-            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $rel['id']; ?>" class="course-card" style="flex-direction:row;padding:12px;gap:12px;">
+            <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($rel['slug']); ?>" class="course-card" style="flex-direction:row;padding:12px;gap:12px;">
                 <div style="width:80px;height:70px;background:linear-gradient(135deg,#0d1a2e,#0a2010);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden;position:relative;">
                     <?php if (!empty($rel['thumbnail'])): ?>
                         <img src="<?php echo e($rel['thumbnail']); ?>" alt="<?php echo e($rel['title']); ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">

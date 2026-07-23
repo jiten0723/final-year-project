@@ -39,7 +39,7 @@ include __DIR__ . '/../includes/header.php';
             Start your learning journey today!
         </p>
         <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-            <a href="<?php echo BASE_URL; ?>/courses/detail.php?id=<?php echo $courseId; ?>" class="btn-primary-custom">
+            <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>" class="btn-primary-custom">
                 <i class="fas fa-play-circle"></i> Start Learning Now
             </a>
             <a href="<?php echo BASE_URL; ?>/dashboard/student.php" class="btn-outline-custom">

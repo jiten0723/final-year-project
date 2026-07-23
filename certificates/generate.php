@@ -464,7 +464,7 @@ include __DIR__ . '/../includes/header.php'; ?>
 ?>
     <!-- Copyright bar -->
     <div style="text-align:center;padding:14px 0;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:24px;">
-        &copy; <?php echo date('Y'); ?> <a href="<?php echo BASE_URL; ?>/index.php" style="color:var(--primary);font-weight:600;text-decoration:none;">EDUCORE</a> — All rights reserved.
+        &copy; <?php echo date('Y'); ?> <a href="<?php echo BASE_URL; ?>/Homepage" style="color:var(--primary);font-weight:600;text-decoration:none;">EDUCORE</a> — All rights reserved.
     </div>
 </body>
 </html>

@@ -65,7 +65,7 @@ $bodyClasses = 'bg-gray-950 text-white';
 <nav class="navbar-educore" id="mainNavbar">
     <div class="nav-container">
         <!-- Logo -->
-        <a href="<?php echo BASE_URL; ?>/index.php" class="navbar-brand-custom">
+        <a href="<?php echo BASE_URL; ?>/Homepage" class="navbar-brand-custom">
             <div class="logo-icon"><i class="fas fa-graduation-cap"></i></div>
             <span class="logo-text">EDU<span class="logo-accent">CORE</span></span>
         </a>

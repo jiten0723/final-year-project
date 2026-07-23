@@ -43,7 +43,7 @@ function requireLogin($redirect = '/project/login.php') {
 function requireRole($role) {
     requireLogin();
     if ($_SESSION['user_role'] !== $role && $_SESSION['user_role'] !== 'admin') {
-        header("Location: " . BASE_URL . "/index.php?error=access_denied");
+        header("Location: " . BASE_URL . "/Homepage?error=access_denied");
         exit();
     }
 }

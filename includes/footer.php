@@ -23,7 +23,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
             <!-- ── Brand + description + social ── -->
             <div>
                 <!-- Logo -->
-                <a href="<?php echo BASE_URL; ?>/index.php"
+                <a href="<?php echo BASE_URL; ?>/Homepage"
                    style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:18px;">
                     <div style="width:40px;height:40px;background:var(--gradient-primary);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 16px rgba(34,197,94,0.3);">🎓</div>
                     <span style="font-family:var(--font-heading);font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.3px;">EDU<span style="color:var(--primary);">CORE</span></span>
@@ -181,7 +181,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                 <a href="#" style="font-size:13px;color:var(--text-muted);text-decoration:none;transition:color 0.2s;"
                    onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"><?php echo $link; ?></a>
                 <?php endforeach; ?>
-                <a href="<?php echo BASE_URL; ?>/index.php"
+                <a href="<?php echo BASE_URL; ?>/Homepage"
                    style="font-size:13px;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:5px;font-weight:600;"
                    onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                     <i class="fas fa-external-link-alt" style="font-size:10px;"></i> Student View
@@ -206,7 +206,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
 
             <!-- ── Brand + description ── -->
             <div>
-                <a href="<?php echo BASE_URL; ?>/index.php"
+                <a href="<?php echo BASE_URL; ?>/Homepage"
                    style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:18px;">
                     <div style="width:40px;height:40px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 16px rgba(239,68,68,0.3);">🛡️</div>
                     <span style="font-family:var(--font-heading);font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.3px;">EDU<span style="color:#ef4444;">CORE</span></span>
@@ -369,7 +369,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                 <a href="#" style="font-size:13px;color:var(--text-muted);text-decoration:none;transition:color 0.2s;"
                    onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-muted)'"><?php echo $link; ?></a>
                 <?php endforeach; ?>
-                <a href="<?php echo BASE_URL; ?>/index.php"
+                <a href="<?php echo BASE_URL; ?>/Homepage"
                    style="font-size:13px;color:#ef4444;text-decoration:none;display:flex;align-items:center;gap:5px;font-weight:600;"
                    onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                     <i class="fas fa-external-link-alt" style="font-size:10px;"></i> View Public Site
@@ -392,7 +392,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
      MINIMAL FOOTER (admin, other dashboards)
 ════════════════════════════════════════════ -->
 <footer style="border-top:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--text-muted);background:var(--bg-darker);margin-top:auto;">
-    <span>&copy; <?php echo date('Y'); ?> <a href="<?php echo BASE_URL; ?>/index.php" style="color:var(--primary);font-weight:600;text-decoration:none;">EDUCORE</a> — All rights reserved.</span>
+    <span>&copy; <?php echo date('Y'); ?> <a href="<?php echo BASE_URL; ?>/Homepage" style="color:var(--primary);font-weight:600;text-decoration:none;">EDUCORE</a> — All rights reserved.</span>
     <div style="display:flex;align-items:center;gap:16px;">
         <a href="<?php echo BASE_URL; ?>/courses/index.php" style="color:var(--text-muted);" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Browse Courses</a>
         <a href="#" style="color:var(--text-muted);" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Help</a>
@@ -412,7 +412,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
         <div class="row g-4 footer-main">
             <!-- Brand -->
             <div class="col-lg-4">
-                <a href="<?php echo BASE_URL; ?>/index.php" class="footer-brand">
+                <a href="<?php echo BASE_URL; ?>/Homepage" class="footer-brand">
                     <div class="logo-icon-sm"><i class="fas fa-graduation-cap"></i></div>
                     <span>EDU<span class="logo-accent">CORE</span></span>
                 </a>

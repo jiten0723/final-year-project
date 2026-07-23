@@ -116,7 +116,7 @@ include __DIR__ . '/../includes/header.php';
             <div class="col-lg-7">
                 <!-- Breadcrumb -->
                 <nav style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
-                    <a href="<?php echo BASE_URL; ?>/index.php" style="color:var(--text-muted);">Home</a>
+                    <a href="<?php echo BASE_URL; ?>/Homepage" style="color:var(--text-muted);">Home</a>
                     <span style="margin:0 8px;">›</span>
                     <a href="<?php echo BASE_URL; ?>/courses/index.php?category=<?php echo e($course['category_slug']); ?>" style="color:var(--text-muted);"><?php echo e($course['category_name']); ?></a>
                     <span style="margin:0 8px;">›</span>

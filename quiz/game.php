@@ -72,7 +72,7 @@ include __DIR__ . '/../includes/header.php';
             <div id="saveStatus" style="margin-bottom:20px;font-size:13px;color:#9ca3af;"></div>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
                 <button onclick="startGame()" class="btn-primary-custom"><i class="fas fa-redo"></i> Play Again</button>
-                <a href="<?php echo BASE_URL; ?>/dashboard/student.php?tab=quizzes" class="btn-outline-custom"><i class="fas fa-chart-bar"></i> My Results</a>
+                <a href="<?php echo BASE_URL; ?>/dashboard/student?tab=quizzes" class="btn-outline-custom"><i class="fas fa-chart-bar"></i> My Results</a>
                 <a href="<?php echo BASE_URL; ?>/quiz/index.php" class="btn-outline-custom"><i class="fas fa-brain"></i> Take a Quiz</a>
             </div>
         </div>

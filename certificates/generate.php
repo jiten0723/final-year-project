@@ -29,7 +29,7 @@ $slug     = trim($_GET['slug'] ?? '');
 $courseId = (int)($_GET['course_id'] ?? 0);
 
 if (!$slug && !$courseId) {
-    header("Location: " . BASE_URL . "/dashboard/student.php?tab=certificates");
+    header("Location: " . BASE_URL . "/dashboard/student?tab=certificates");
     exit();
 }
 
@@ -448,7 +448,7 @@ include __DIR__ . '/../includes/header.php'; ?>
         <button onclick="navigator.clipboard.writeText('<?php echo BASE_URL . '/certificates/verify/' . $cert['certificate_code']; ?>').then(()=>alert('Verification link copied!'))" class="btn-outline-custom" style="padding:10px 20px;font-size:14px;">
             <i class="fas fa-share-alt"></i> Share
         </button>
-        <a href="<?php echo BASE_URL; ?>/dashboard/student.php?tab=certificates" class="btn-outline-custom" style="padding:10px 20px;font-size:14px;">
+        <a href="<?php echo BASE_URL; ?>/dashboard/student?tab=certificates" class="btn-outline-custom" style="padding:10px 20px;font-size:14px;">
             <i class="fas fa-arrow-left"></i> Back
         </a>
     </div>

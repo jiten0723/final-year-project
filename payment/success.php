@@ -42,7 +42,7 @@ include __DIR__ . '/../includes/header.php';
             <a href="<?php echo BASE_URL; ?>/courses/<?php echo e($course['slug']); ?>" class="btn-primary-custom">
                 <i class="fas fa-play-circle"></i> Start Learning Now
             </a>
-            <a href="<?php echo BASE_URL; ?>/dashboard/student.php" class="btn-outline-custom">
+            <a href="<?php echo BASE_URL; ?>/dashboard/student" class="btn-outline-custom">
                 <i class="fas fa-tachometer-alt"></i> My Dashboard
             </a>
         </div>

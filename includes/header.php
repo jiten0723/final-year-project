@@ -86,7 +86,7 @@ $bodyClasses = 'bg-gray-950 text-white';
         <!-- Nav Links -->
         <div class="nav-links d-none d-xl-flex">
             <a href="<?php echo BASE_URL; ?>/courses/" class="nav-link-item <?php echo $currentPage=='index.php' && strpos($_SERVER['PHP_SELF'],'courses') !== false ? 'active':'' ?>">Explore</a>
-            <a href="<?php echo BASE_URL; ?>/courses/index.php?type=free" class="nav-link-item">Free Courses</a>
+            <a href="<?php echo BASE_URL; ?>/courses/type=free" class="nav-link-item">Free Courses</a>
             <a href="<?php echo BASE_URL; ?>/quiz/" class="nav-link-item">Quizzes</a>
         </div>
 
@@ -132,14 +132,14 @@ $bodyClasses = 'bg-gray-950 text-white';
                         </li>
                         <li><hr class="dropdown-divider my-1"></li>
                         <?php if ($currentUser['role'] === 'student'): ?>
-                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/student.php"><i class="fas fa-tachometer-alt me-2"></i>My Dashboard</a></li>
-                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/student.php?tab=courses"><i class="fas fa-book me-2"></i>My Courses</a></li>
-                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/student.php?tab=certificates"><i class="fas fa-certificate me-2"></i>Certificates</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/student"><i class="fas fa-tachometer-alt me-2"></i>My Dashboard</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/student?tab=courses"><i class="fas fa-book me-2"></i>My Courses</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/student?tab=certificates"><i class="fas fa-certificate me-2"></i>Certificates</a></li>
                         <?php elseif ($currentUser['role'] === 'teacher'): ?>
-                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/teacher.php"><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Dashboard</a></li>
-                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/teacher.php?tab=courses"><i class="fas fa-plus-circle me-2"></i>Create Course</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/teacher"><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Dashboard</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/teacher?tab=courses"><i class="fas fa-plus-circle me-2"></i>Create Course</a></li>
                         <?php elseif ($currentUser['role'] === 'admin'): ?>
-                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/admin.php"><i class="fas fa-cogs me-2"></i>Admin Panel</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>/dashboard/admin"><i class="fas fa-cogs me-2"></i>Admin Panel</a></li>
                         <?php endif; ?>
                         <li><hr class="dropdown-divider my-1"></li>
                         <li><a class="dropdown-item text-danger" href="<?php echo BASE_URL; ?>/logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
@@ -166,7 +166,7 @@ $bodyClasses = 'bg-gray-950 text-white';
             <input type="text" name="search" placeholder="Search courses...">
         </form>
         <a href="<?php echo BASE_URL; ?>/courses/index.php">Explore Courses</a>
-        <a href="<?php echo BASE_URL; ?>/courses/index.php?type=free">Free Courses</a>
+        <a href="<?php echo BASE_URL; ?>/courses/type=free">Free Courses</a>
         <a href="<?php echo BASE_URL; ?>/quiz/index.php">Quizzes</a>
         <?php if (isLoggedIn()): ?>
             <a href="<?php echo BASE_URL; ?>/dashboard/<?php echo $currentUser['role']; ?>.php">Dashboard</a>

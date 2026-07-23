@@ -70,7 +70,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                         ['?tab=overview', 'fas fa-video',        'Live Classes'],
                     ] as [$href, $icon, $label]): ?>
                     <li>
-                        <a href="<?php echo BASE_URL; ?>/dashboard/teacher.php<?php echo $href; ?>"
+                        <a href="<?php echo BASE_URL; ?>/dashboard/teacher<?php echo $href; ?>"
                            style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:14px;text-decoration:none;transition:all 0.2s;padding:4px 0;"
                            onmouseover="this.style.color='var(--primary)';this.querySelector('i').style.color='var(--primary)'"
                            onmouseout="this.style.color='var(--text-muted)';this.querySelector('i').style.color='var(--text-muted)'">
@@ -99,7 +99,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                         ['?tab=students', 'fas fa-calendar-check','Attendance'],
                     ] as [$href, $icon, $label]): ?>
                     <li>
-                        <a href="<?php echo BASE_URL; ?>/dashboard/teacher.php<?php echo $href; ?>"
+                        <a href="<?php echo BASE_URL; ?>/dashboard/teacher<?php echo $href; ?>"
                            style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:14px;text-decoration:none;transition:all 0.2s;padding:4px 0;"
                            onmouseover="this.style.color='#60a5fa';this.querySelector('i').style.color='#60a5fa'"
                            onmouseout="this.style.color='var(--text-muted)';this.querySelector('i').style.color='var(--text-muted)'">
@@ -241,7 +241,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                         ['?tab=payments',  'fas fa-chart-line',         'Reports & Analytics'],
                     ] as [$href, $icon, $label]): ?>
                     <li>
-                        <a href="<?php echo BASE_URL; ?>/dashboard/admin.php<?php echo $href; ?>"
+                        <a href="<?php echo BASE_URL; ?>/dashboard/admin<?php echo $href; ?>"
                            style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:14px;text-decoration:none;transition:all 0.2s;padding:4px 0;"
                            onmouseover="this.style.color='#ef4444';this.querySelector('i').style.color='#ef4444'"
                            onmouseout="this.style.color='var(--text-muted)';this.querySelector('i').style.color='var(--text-muted)'">
@@ -270,7 +270,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                         ['#', 'fas fa-history',         'Activity Logs'],
                     ] as [$href, $icon, $label]): ?>
                     <li>
-                        <a href="<?php echo $href === '#' ? '#' : BASE_URL . '/dashboard/admin.php' . $href; ?>"
+                        <a href="<?php echo $href === '#' ? '#' : BASE_URL . '/dashboard/admin' . $href; ?>"
                            style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:14px;text-decoration:none;transition:all 0.2s;padding:4px 0;"
                            onmouseover="this.style.color='#60a5fa';this.querySelector('i').style.color='#60a5fa'"
                            onmouseout="this.style.color='var(--text-muted)';this.querySelector('i').style.color='var(--text-muted)'">
@@ -433,7 +433,7 @@ $isMinimal = isset($minimalFooter) && $minimalFooter;
                     <li><a href="<?php echo BASE_URL; ?>/courses/index.php?category=design">Design</a></li>
                     <li><a href="<?php echo BASE_URL; ?>/courses/index.php?category=business">Business</a></li>
                     <li><a href="<?php echo BASE_URL; ?>/courses/index.php?category=data-science">Data Science</a></li>
-                    <li><a href="<?php echo BASE_URL; ?>/courses/index.php?type=free">Free Courses</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/courses/type=free">Free Courses</a></li>
                 </ul>
             </div>
             <!-- Company -->

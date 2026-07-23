@@ -87,7 +87,7 @@ include __DIR__ . '/includes/header.php';
                     <a href="<?php echo BASE_URL; ?>/courses/index.php" class="btn-hero-primary">
                         <i class="fas fa-rocket"></i> Start Learning Free
                     </a>
-                    <a href="<?php echo BASE_URL; ?>/courses/index.php?type=premium" class="btn-hero-secondary">
+                    <a href="<?php echo BASE_URL; ?>/courses/type=premium" class="btn-hero-secondary">
                         <i class="fas fa-play-circle"></i> Browse Courses
                     </a>
                 </div>
@@ -332,7 +332,7 @@ include __DIR__ . '/includes/header.php';
                 <p class="section-desc">Courses picked  based on your learning history, quiz performance, and interests.</p>
             </div>
             <div class="col-md-4 d-flex justify-content-md-end align-items-end mt-3 mt-md-0">
-                <a href="<?php echo BASE_URL; ?>/dashboard/student.php?tab=recommended" class="btn-outline-custom">
+                <a href="<?php echo BASE_URL; ?>/dashboard/student?tab=recommended" class="btn-outline-custom">
                     View All <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
@@ -530,7 +530,7 @@ include __DIR__ . '/includes/header.php';
                         <a href="<?php echo BASE_URL; ?>/courses/index.php" class="btn-hero-primary">
                             <i class="fas fa-rocket"></i> Continue Learning
                         </a>
-                        <a href="<?php echo BASE_URL; ?>/dashboard/student.php" class="btn-hero-secondary">
+                        <a href="<?php echo BASE_URL; ?>/dashboard/student" class="btn-hero-secondary">
                             <i class="fas fa-tachometer-alt"></i> My Dashboard
                         </a>
                     <?php endif; ?>

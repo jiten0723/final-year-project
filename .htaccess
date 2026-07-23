@@ -11,12 +11,23 @@
     # Maps 'Homepage' -> 'index.php'
     RewriteRule ^Homepage/?$ index.php [L,QSA]
 
+    # 8. ── Dashboard clean URLs ──────────────────────────────────────────────
+    # Maps 'dashboard/admin'   -> 'dashboard/admin.php'
+    # Maps 'dashboard/teacher' -> 'dashboard/teacher.php'
+    # Maps 'dashboard/student' -> 'dashboard/student.php'
+    RewriteRule ^dashboard/admin/?$ dashboard/admin.php [L,QSA]
+    RewriteRule ^dashboard/teacher/?$ dashboard/teacher.php [L,QSA]
+    RewriteRule ^dashboard/student/?$ dashboard/student.php [L,QSA]
+
     # 1. ── Quiz Folder ────────────────────────────────────────────────────────
     RewriteRule ^quiz/(.+)$ quiz/index.php [L,QSA]
 
-    # 2. ── Course Types (free/paid) ──────────────────────────────────────────
-    # Maps 'courses/free' -> 'courses/index.php?type=free'
-    RewriteRule ^courses/(free|paid)/?$ courses/index.php?type=$1 [L,QSA]
+    # 2. ── Course Types (free/paid/premium) ─────────────────────────────────
+    # Maps 'courses/type=free' -> 'courses/index.php?type=free'
+    RewriteRule ^courses/type=([^/&]+)/?$ courses/index.php?type=$1 [L,QSA]
+
+    # Legacy: Maps 'courses/free' -> 'courses/index.php?type=free'
+    RewriteRule ^courses/(free|paid|premium)/?$ courses/index.php?type=$1 [L,QSA]
 
     # 3. ── Enrolled Course Slugs ──────────────────────────────────────────────
     # Maps 'courses/enrolled/course-slug' -> 'courses/detail.php?slug=course-slug'

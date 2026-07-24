@@ -72,7 +72,7 @@ $bodyClasses = 'bg-gray-950 text-white';
 
         <?php if (!isset($minimalHeader) || !$minimalHeader): ?>
         <!-- Search Bar -->
-        <div class="nav-search-wrap d-none d-lg-flex">
+        <!-- <div class="nav-search-wrap d-none d-lg-flex">
             <form action="<?php echo BASE_URL; ?>/courses/index.php" method="GET" class="nav-search-form">
                 <i class="fas fa-search nav-search-icon"></i>
                 <input type="text" name="search" class="nav-search-input"
@@ -81,7 +81,7 @@ $bodyClasses = 'bg-gray-950 text-white';
                     autocomplete="off">
                 <button type="submit" class="nav-search-btn">Search</button>
             </form>
-        </div>
+        </div> -->
 
         <!-- Nav Links -->
         <div class="nav-links d-none d-xl-flex">

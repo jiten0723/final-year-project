@@ -21,12 +21,13 @@
   --text-primary: #f9fafb;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
-  --gradient-primary: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
-  --gradient-hero: linear-gradient(
-    135deg,
-    #0a0f1e 0%,
-    #0d1a2e 50%,
-    #0a1a10 100%
+  --gradient-primary: linear-gradient(135deg, #6da073 0%, #6a82a8 100%);
+--gradient-hero: linear-gradient(
+  135deg,
+  #0b1d28 0%,
+  #0f3443 40%,
+  /* #2b8288 70%, */
+  #132238 100%
   );
   --gradient-card: linear-gradient(145deg, #111827, #1a2332);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -123,6 +124,7 @@ img {
   display: flex;
   align-items: center;
   gap: 20px;
+  position: relative;
 }
 .navbar-brand-custom {
   display: flex;
@@ -206,6 +208,9 @@ img {
   display: flex;
   align-items: center;
   gap: 4px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .nav-link-item {
   padding: 8px 14px;
@@ -1236,7 +1241,6 @@ select option {
   background: #1a2332;
   color: #fff;
 }
-}
 .input-wrapper {
   position: relative;
 }
@@ -1783,12 +1787,13 @@ select option {
   color: var(--text-muted);
   font-family: monospace;
 }
+
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 6px;
   font-family: "Georgia", serif;
   font-style: italic;
-}
+
 .cert-course {
   font-size: 20px;
   font-weight: 700;

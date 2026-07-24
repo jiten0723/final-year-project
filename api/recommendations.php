@@ -165,6 +165,7 @@ $response = array_map(fn($c) => [
     'rating'      => round((float)($c['avg_rating'] ?? 0), 1),
     'enrolls'     => (int)$c['enroll_count'],
     'icon'        => $catIcons[$c['category_name'] ?? ''] ?? '📚',
+    'thumbnail'   => $c['thumbnail'] ?? '',
     'reason'      => $c['_reason'],
     'reason_label'=> $reasonLabels[$c['_reason']] ?? '🔥 Trending on EDUCORE',
     'score'       => round($c['_score'], 1),

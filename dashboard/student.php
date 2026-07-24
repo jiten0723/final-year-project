@@ -571,10 +571,13 @@ include __DIR__ . '/../includes/header.php';
                         const price = c.price == 0
                             ? '<span class="course-price price-free">FREE</span>'
                             : `<span class="course-price price-paid">NPR ${Number(c.price).toLocaleString()}</span>`;
+                        const thumbHtml = c.thumbnail
+                            ? `<img src="${c.thumbnail}" alt="${c.title}" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;" loading="lazy">`
+                            : `<div class="course-thumbnail-placeholder">${c.icon}</div>`;
                         return `
                         <a href="${baseUrl}/courses/${c.slug}" class="course-card">
                             <div class="course-thumbnail">
-                                <div class="course-thumbnail-placeholder">${c.icon}</div>
+                                ${thumbHtml}
                                 <span class="course-badge badge-${c.type}">${c.type.toUpperCase()}</span>
                                 <div style="position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);border-radius:50px;padding:3px 10px;font-size:11px;font-weight:600;color:#fff;border:1px solid rgba(255,255,255,0.12);">
                                     ${c.reason_label}

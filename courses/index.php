@@ -211,7 +211,7 @@ include __DIR__ . '/../includes/header.php';
                 <div class="courses-grid" id="coursesGrid">
                     <?php foreach ($courses as $course):
                         $rating  = getCourseRating($course['id']);
-                        $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $course['slug']) : false;
+                        $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $course['id']) : false;
                         $icon = $catIcons[$course['category_name']] ?? '📚';
                     ?>
                     

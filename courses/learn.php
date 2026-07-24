@@ -44,11 +44,6 @@ if (!$lessonId || !in_array($lessonId, array_column($lessons, 'id'))) {
     $lessonId = $lessons[0]['id'];
 }
 
-// Fetch current lesson
-$lessonStmt = $db->prepare("SELECT * FROM lessons WHERE id = ? AND course_id = ?");
-$lessonStmt->execute([$lessonId, $courseId]);
-$lesson = $lessonStmt->fetch();
-
 // Fetch completed lessons for this user
 $completedStmt = $db->prepare("
     SELECT lesson_id FROM lesson_progress
@@ -58,25 +53,65 @@ $completedStmt = $db->prepare("
 $completedStmt->execute([$_SESSION['user_id'], $courseId]);
 $completedLessonIds = $completedStmt->fetchAll(\PDO::FETCH_COLUMN);
 
-// Mark current lesson as completed
-if (!in_array($lessonId, $completedLessonIds)) {
-    $db->prepare("INSERT IGNORE INTO lesson_progress (user_id, lesson_id, completed, completed_at) VALUES (?,?,1,NOW())")
-       ->execute([$_SESSION['user_id'], $lessonId]);
-    $completedLessonIds[] = $lessonId;
+// ── Sequential gating: build unlocked lesson IDs ──────────────────────────
+// Lesson 0 is always unlocked. Lesson N is unlocked if lesson N-1 is completed.
+$lessonIds    = array_column($lessons, 'id');
+$unlockedIds  = [];
+foreach ($lessons as $i => $ls) {
+    if ($i === 0) {
+        $unlockedIds[] = $ls['id']; // first lesson always accessible
+    } elseif (in_array($lessons[$i - 1]['id'], $completedLessonIds)) {
+        $unlockedIds[] = $ls['id'];
+    } else {
+        break; // stop — everything after a locked lesson is also locked
+    }
 }
 
-// Update enrollment progress
+// ── URL guard: redirect to last unlocked lesson if trying to access locked ──
+if (!in_array($lessonId, $unlockedIds)) {
+    $redirectId = end($unlockedIds) ?: $lessons[0]['id'];
+    header("Location: " . BASE_URL . "/courses/learn.php?course_id={$courseId}&lesson_id={$redirectId}&gated=1");
+    exit();
+}
+
+// Fetch current lesson
+$lessonStmt = $db->prepare("SELECT * FROM lessons WHERE id = ? AND course_id = ?");
+$lessonStmt->execute([$lessonId, $courseId]);
+$lesson = $lessonStmt->fetch();
+
+// ── Handle AJAX "Mark as Complete" POST ──────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_complete'])) {
+    header('Content-Type: application/json');
+    $markId = (int)$_POST['lesson_id'];
+    // Must be in unlocked set
+    if (in_array($markId, $unlockedIds)) {
+        $db->prepare("INSERT IGNORE INTO lesson_progress (user_id, lesson_id, completed, completed_at) VALUES (?,?,1,NOW())")
+           ->execute([$_SESSION['user_id'], $markId]);
+        if (!in_array($markId, $completedLessonIds)) $completedLessonIds[] = $markId;
+    }
+    // Recalculate progress
+    $totalLessons   = count($lessons);
+    $completedCount = count($completedLessonIds);
+    $progress       = $totalLessons > 0 ? round(($completedCount / $totalLessons) * 100) : 0;
+    $db->prepare("UPDATE enrollments SET progress=? WHERE user_id=? AND course_id=?")
+       ->execute([$progress, $_SESSION['user_id'], $courseId]);
+    if ($progress >= 100) {
+        $db->prepare("UPDATE enrollments SET status='completed', completed_at=NOW() WHERE user_id=? AND course_id=? AND status='active'")
+           ->execute([$_SESSION['user_id'], $courseId]);
+    }
+    echo json_encode([
+        'success'      => true,
+        'progress'     => $progress,
+        'completed'    => $completedLessonIds,
+        'courseComplete'=> $progress >= 100,
+    ]);
+    exit();
+}
+
+// Progress for display
 $totalLessons    = count($lessons);
 $completedCount  = count($completedLessonIds);
 $progress        = $totalLessons > 0 ? round(($completedCount / $totalLessons) * 100) : 0;
-$db->prepare("UPDATE enrollments SET progress=? WHERE user_id=? AND course_id=?")
-   ->execute([$progress, $_SESSION['user_id'], $courseId]);
-
-// Mark as completed if 100%
-if ($progress >= 100) {
-    $db->prepare("UPDATE enrollments SET status='completed', completed_at=NOW() WHERE user_id=? AND course_id=? AND status='active'")
-       ->execute([$_SESSION['user_id'], $courseId]);
-}
 
 // Enrollment row
 $enrollRow = $db->prepare("SELECT * FROM enrollments WHERE user_id=? AND course_id=?");
@@ -204,6 +239,7 @@ include __DIR__ . '/../includes/header.php';
 .learn-lesson-num.done { background: rgba(34,197,94,0.15); color: var(--primary); }
 .learn-lesson-num.current { background: var(--gradient-primary); color: #fff; }
 .learn-lesson-num.pending { background: var(--bg-input); color: var(--text-muted); }
+.learn-lesson-num.locked { background: rgba(107,114,128,0.12); color: #6b7280; }
 .learn-lesson-info { flex: 1; min-width: 0; }
 .learn-lesson-name {
     font-size: 13px;
@@ -279,7 +315,85 @@ include __DIR__ . '/../includes/header.php';
 @media (max-width: 900px) {
     .learn-sidebar { display: none; }
 }
+</style>
 
+<script>
+const BASE_URL   = '<?php echo BASE_URL; ?>';
+const COURSE_ID  = <?php echo $courseId; ?>;
+const LESSON_ID  = <?php echo $lessonId; ?>;
+const NEXT_ID    = <?php echo $nextLesson ? $nextLesson['id'] : 'null'; ?>;
+const IS_LAST    = <?php echo $isLastLesson ? 'true' : 'false'; ?>;
+const COURSE_SLUG = '<?php echo e($course['slug']); ?>';
+
+// Show gated toast if redirected here from a locked lesson
+<?php if (isset($_GET['gated'])): ?>
+document.addEventListener('DOMContentLoaded', () => {
+    showToast('info', '🔒 Please complete the previous lesson first.');
+});
+<?php endif; ?>
+
+function markLessonComplete(lessonId) {
+    const btn = document.getElementById('markCompleteBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `mark_complete=1&lesson_id=${lessonId}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) { showToast('error', 'Could not save progress. Try again.'); return; }
+
+        showToast('success', '✅ Lesson marked as complete!');
+
+        // Update progress bar in sidebar
+        const fill = document.querySelector('.learn-progress-fill');
+        const label = document.querySelector('.learn-progress-label span:last-child');
+        if (fill)  fill.style.width = data.progress + '%';
+        if (label) label.textContent = data.progress + '%';
+
+        // Update top badge
+        const badge = document.querySelector('.learn-topbar span[style*="var(--primary)"]');
+        if (badge) badge.textContent = data.progress + '% Complete';
+
+        // Mark sidebar item green
+        const activeNum = document.querySelector('.learn-lesson-num.current');
+        if (activeNum) { activeNum.classList.replace('current','done'); activeNum.innerHTML = '<i class="fas fa-check"></i>'; }
+
+        // Unlock Next button
+        const nextBtn = document.getElementById('nextBtn');
+        if (data.courseComplete) {
+            // 100% complete — swap Next for cert button or unlock cert
+            if (IS_LAST) {
+                window.location.reload(); // simplest — cert banner + cert btn will render
+            } else {
+                window.location.href = `${BASE_URL}/courses/learn.php?course_id=${COURSE_ID}&lesson_id=${NEXT_ID}`;
+            }
+        } else if (nextBtn && NEXT_ID) {
+            // Enable next button
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = '1';
+            nextBtn.style.cursor  = 'pointer';
+            nextBtn.onclick = () => { window.location.href = `${BASE_URL}/courses/learn.php?course_id=${COURSE_ID}&lesson_id=${NEXT_ID}`; };
+            nextBtn.innerHTML = nextBtn.innerHTML.replace('fa-lock','fa-arrow-right');
+        } else {
+            window.location.reload();
+        }
+
+        // Replace "mark as complete" area with "Completed!" note
+        const markArea = btn?.closest('div[style*="rgba(34,197,94"]');
+        if (markArea) {
+            markArea.outerHTML = `<div style="margin-top:40px;padding:14px 20px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-check-circle" style="color:var(--primary);font-size:16px;"></i>
+                <span style="font-size:13px;color:var(--primary);font-weight:600;">Lesson completed!</span>
+            </div>`;
+        }
+    })
+    .catch(() => showToast('error', 'Network error. Please try again.'));
+}
+</script>
+<style>
 /* Certificate banner */
 .cert-banner {
     background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(59,130,246,0.08));
@@ -319,28 +433,37 @@ include __DIR__ . '/../includes/header.php';
 
         <div class="learn-lesson-list">
             <?php foreach ($lessons as $i => $ls):
-                $isDone    = in_array($ls['id'], $completedLessonIds);
-                $isCurrent = $ls['id'] === $lessonId;
-                $numClass  = $isCurrent ? 'current' : ($isDone ? 'done' : 'pending');
+                $isDone     = in_array($ls['id'], $completedLessonIds);
+                $isCurrent  = $ls['id'] === $lessonId;
+                $isUnlocked = in_array($ls['id'], $unlockedIds);
+                $numClass   = $isCurrent ? 'current' : ($isDone ? 'done' : ($isUnlocked ? 'pending' : 'locked'));
             ?>
+            <?php if ($isUnlocked): ?>
             <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $courseId; ?>&lesson_id=<?php echo $ls['id']; ?>"
                class="learn-lesson-item <?php echo $isCurrent ? 'active' : ''; ?>">
+            <?php else: ?>
+            <div class="learn-lesson-item locked-item" style="opacity:0.45;pointer-events:none;cursor:default;">
+            <?php endif; ?>
                 <div class="learn-lesson-num <?php echo $numClass; ?>">
-                    <?php if ($isDone && !$isCurrent): ?>
+                    <?php if (!$isUnlocked): ?>
+                        <i class="fas fa-lock" style="font-size:10px;"></i>
+                    <?php elseif ($isDone && !$isCurrent): ?>
                         <i class="fas fa-check"></i>
                     <?php else: ?>
                         <?php echo $i + 1; ?>
                     <?php endif; ?>
                 </div>
                 <div class="learn-lesson-info">
-                    <div class="learn-lesson-name"><?php echo e($ls['title']); ?></div>
+                    <div class="learn-lesson-name" style="<?php echo !$isUnlocked ? 'color:var(--text-muted);' : ''; ?>"><?php echo e($ls['title']); ?></div>
                     <div class="learn-lesson-meta">
                         <?php echo $ls['video_url'] ? '<i class="fas fa-video"></i> Video' : '<i class="fas fa-file-alt"></i> Reading'; ?>
                         · <?php echo $ls['duration_minutes']; ?> min
-                        <?php if ($isDone): ?><span style="color:var(--primary);margin-left:4px;">✓</span><?php endif; ?>
+                        <?php if ($isDone): ?><span style="color:var(--primary);margin-left:4px;">✓</span>
+                        <?php elseif (!$isUnlocked): ?><span style="color:var(--text-muted);margin-left:4px;font-size:10px;">🔒 Locked</span>
+                        <?php endif; ?>
                     </div>
                 </div>
-            </a>
+            <?php if ($isUnlocked): ?></a><?php else: ?></div><?php endif; ?>
             <?php endforeach; ?>
         </div>
     </aside>
@@ -359,7 +482,7 @@ include __DIR__ . '/../includes/header.php';
                 <!-- Mobile progress badge -->
                 <span style="font-size:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:var(--primary);padding:4px 12px;border-radius:50px;font-weight:700;"><?php echo $progress; ?>% Complete</span>
                 <?php if ($progress >= 100): ?>
-                    <a href="<?php echo BASE_URL; ?>/certificates/generate.php?course_id=<?php echo $courseId; ?>" class="learn-nav-btn primary">
+                    <a href="<?php echo BASE_URL; ?>/certificates/generate/<?php echo e($course['slug']); ?>" class="learn-nav-btn primary">
                         <i class="fas fa-certificate"></i> Get Certificate
                     </a>
                 <?php endif; ?>
@@ -404,40 +527,84 @@ include __DIR__ . '/../includes/header.php';
                 <?php echo $content; ?>
             </div>
 
-            <!-- Nav: Prev / Next -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:24px;border-top:1px solid var(--border);gap:12px;flex-wrap:wrap;">
+            <!-- Mark as Complete + Nav bar -->
+            <?php
+                $isCurrentDone  = in_array($lessonId, $completedLessonIds);
+                $isLastLesson   = ($currentIdx === $totalLessons - 1);
+                $isCourseComplete = ($progress >= 100);
+            ?>
+
+            <!-- Mark as Complete button (shown if lesson not yet done) -->
+            <?php if (!$isCurrentDone): ?>
+            <div style="margin-top:40px;padding:20px 24px;background:linear-gradient(135deg,rgba(34,197,94,0.06),rgba(59,130,246,0.04));border:1px solid rgba(34,197,94,0.2);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+                <div>
+                    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:2px;">Finished with this lesson?</div>
+                    <div style="font-size:12px;color:var(--text-muted);">Mark it complete to unlock the next lesson.</div>
+                </div>
+                <button id="markCompleteBtn" onclick="markLessonComplete(<?php echo $lessonId; ?>)"
+                        class="learn-nav-btn primary" style="padding:11px 28px;font-size:14px;">
+                    <i class="fas fa-check-circle"></i> Mark as Complete
+                </button>
+            </div>
+            <?php else: ?>
+            <div style="margin-top:40px;padding:14px 20px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:var(--radius-md);display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-check-circle" style="color:var(--primary);font-size:16px;"></i>
+                <span style="font-size:13px;color:var(--primary);font-weight:600;">Lesson completed!</span>
+            </div>
+            <?php endif; ?>
+
+            <!-- Bottom nav: Prev / Next (or Cert CTA) -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);gap:12px;flex-wrap:wrap;">
+
+                <!-- Prev -->
                 <?php if ($prevLesson): ?>
                     <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $courseId; ?>&lesson_id=<?php echo $prevLesson['id']; ?>" class="learn-nav-btn">
-                        <i class="fas fa-arrow-left"></i> <?php echo e(truncate($prevLesson['title'], 30)); ?>
+                        <i class="fas fa-arrow-left"></i> <?php echo e(truncate($prevLesson['title'], 28)); ?>
                     </a>
                 <?php else: ?>
                     <span></span>
                 <?php endif; ?>
 
-                <?php if ($nextLesson): ?>
-                    <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $courseId; ?>&lesson_id=<?php echo $nextLesson['id']; ?>" class="learn-nav-btn primary">
-                        <?php echo e(truncate($nextLesson['title'], 30)); ?> <i class="fas fa-arrow-right"></i>
-                    </a>
-                <?php else: ?>
-                    <?php if ($progress >= 100): ?>
-                        <a href="<?php echo BASE_URL; ?>/certificates/generate.php?course_id=<?php echo $courseId; ?>" class="learn-nav-btn primary">
-                            <i class="fas fa-certificate"></i> Generate Certificate
+                <!-- Next / Cert -->
+                <?php if ($isLastLesson): ?>
+                    <?php if ($isCourseComplete): ?>
+                        <a href="<?php echo BASE_URL; ?>/certificates/generate/<?php echo e($course['slug']); ?>"
+                           class="learn-nav-btn primary" style="padding:12px 28px;font-size:14px;gap:10px;">
+                            🎓 <span>Get Your Certificate</span>
                         </a>
                     <?php else: ?>
-                        <span style="font-size:13px;color:var(--text-muted);">You've reached the last lesson.</span>
+                        <button disabled class="learn-nav-btn primary" id="nextBtn"
+                                style="opacity:0.4;cursor:not-allowed;"
+                                title="Mark this lesson complete to unlock your certificate">
+                            🎓 Get Certificate <i class="fas fa-lock" style="font-size:11px;"></i>
+                        </button>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <?php if ($isCurrentDone): ?>
+                        <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $courseId; ?>&lesson_id=<?php echo $nextLesson['id']; ?>"
+                           class="learn-nav-btn primary" id="nextBtn">
+                            <?php echo e(truncate($nextLesson['title'], 28)); ?> <i class="fas fa-arrow-right"></i>
+                        </a>
+                    <?php else: ?>
+                        <button disabled class="learn-nav-btn primary" id="nextBtn"
+                                style="opacity:0.4;cursor:not-allowed;"
+                                title="Mark this lesson complete first">
+                            <?php echo e(truncate($nextLesson['title'], 28)); ?> <i class="fas fa-lock" style="font-size:11px;"></i>
+                        </button>
                     <?php endif; ?>
                 <?php endif; ?>
             </div>
 
-            <!-- Certificate completion banner -->
-            <?php if ($progress >= 100): ?>
+            <!-- Certificate completion banner (shown when course = 100%) -->
+            <?php if ($isCourseComplete): ?>
             <div class="cert-banner animate-fade-up">
                 <div class="cert-banner-icon">🏆</div>
                 <div class="cert-banner-text">
                     <h3>Congratulations! You've completed this course!</h3>
-                    <p>You've finished all <?php echo $totalLessons; ?> lesson(s) in <strong style="color:#fff;"><?php echo e($course['title']); ?></strong>. Your certificate is ready to download.</p>
+                    <p>You've finished all <?php echo $totalLessons; ?> lesson(s) in <strong style="color:#fff;"><?php echo e($course['title']); ?></strong>. Your certificate is ready.</p>
                 </div>
-                <a href="<?php echo BASE_URL; ?>/certificates/generate.php?course_id=<?php echo $courseId; ?>" class="learn-nav-btn primary" style="flex-shrink:0;padding:12px 28px;font-size:14px;">
+                <a href="<?php echo BASE_URL; ?>/certificates/generate/<?php echo e($course['slug']); ?>"
+                   class="learn-nav-btn primary" style="flex-shrink:0;padding:12px 28px;font-size:14px;">
                     <i class="fas fa-download"></i> Download Certificate
                 </a>
             </div>

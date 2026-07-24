@@ -71,7 +71,34 @@ $enrolledCourses = $db->prepare("
 $enrolledCourses->execute([$uid]);
 $enrolledCourses = $enrolledCourses->fetchAll();
 
-// Certificates
+// ── Smart "Continue Learning" URLs — first uncompleted lesson per course ──────
+$continueUrls = [];
+foreach ($enrolledCourses as $ec) {
+    $cid = $ec['course_id'];
+    // All lessons in order
+    $allL = $db->prepare("SELECT id FROM lessons WHERE course_id=? ORDER BY order_num");
+    $allL->execute([$cid]);
+    $allL = $allL->fetchAll(\PDO::FETCH_COLUMN);
+
+    // Completed lessons for this course
+    $doneL = $db->prepare("SELECT lesson_id FROM lesson_progress WHERE user_id=? AND completed=1 AND lesson_id IN (SELECT id FROM lessons WHERE course_id=?)");
+    $doneL->execute([$uid, $cid]);
+    $doneL = $doneL->fetchAll(\PDO::FETCH_COLUMN);
+
+    $firstUncompleted = null;
+    foreach ($allL as $lid) {
+        if (!in_array($lid, $doneL)) { $firstUncompleted = $lid; break; }
+    }
+
+    if ($firstUncompleted) {
+        $continueUrls[$cid] = BASE_URL . "/courses/learn.php?course_id={$cid}&lesson_id={$firstUncompleted}";
+    } elseif (!empty($allL)) {
+        // All done — go to last lesson (cert banner shown there)
+        $continueUrls[$cid] = BASE_URL . "/courses/learn.php?course_id={$cid}&lesson_id=" . end($allL);
+    } else {
+        $continueUrls[$cid] = BASE_URL . "/courses/learn.php?course_id={$cid}";
+    }
+}
 $certificates = $db->prepare("
     SELECT cert.*, co.title as course_title, co.type as course_type
     FROM certificates cert
@@ -333,7 +360,7 @@ include __DIR__ . '/../includes/header.php';
                                         <span style="font-size:12px;font-weight:700;color:var(--primary);white-space:nowrap;"><?php echo $ec['progress']; ?>%</span>
                                     </div>
                                 </div>
-                                <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $ec['course_id']; ?>" class="btn-enroll-sm" style="flex-shrink:0;font-size:12px;padding:6px 14px;">Continue →</a>
+                                <a href="<?php echo $continueUrls[$ec['course_id']] ?? (BASE_URL . '/courses/learn.php?course_id=' . $ec['course_id']); ?>" class="btn-enroll-sm" style="flex-shrink:0;font-size:12px;padding:6px 14px;">Continue →</a>
                             </div>
                             <?php endforeach; ?>
                             </div>
@@ -409,7 +436,7 @@ include __DIR__ . '/../includes/header.php';
                         </div>
                         <div class="progress-bar-custom"><div class="progress-fill" data-width="<?php echo $ec['progress']; ?>%" style="width:<?php echo $ec['progress']; ?>%;"></div></div>
                         <div style="display:flex;gap:8px;margin-top:14px;">
-                            <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $ec['course_id']; ?>" class="btn-enroll-sm" style="flex:1;justify-content:center;">
+                            <a href="<?php echo $continueUrls[$ec['course_id']] ?? (BASE_URL . '/courses/learn.php?course_id=' . $ec['course_id']); ?>" class="btn-enroll-sm" style="flex:1;justify-content:center;">
                                 <?php echo $ec['progress']>=100 ? '🎉 Review' : 'Continue'; ?> →
                             </a>
                             <?php if ($ec['progress'] >= 100): ?>

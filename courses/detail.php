@@ -47,6 +47,29 @@ $id       = $course['id']; // numeric id for DB queries
 $rating   = getCourseRating($id);
 $enrolled = isLoggedIn() ? isEnrolled($_SESSION['user_id'], $id) : false;
 
+// If enrolled, find first uncompleted lesson for "Continue Learning" smart link
+$continueUrl = BASE_URL . "/courses/learn.php?course_id={$id}";
+if ($enrolled && isLoggedIn()) {
+    $allLessonsForContinue = $db->prepare("SELECT id FROM lessons WHERE course_id=? ORDER BY order_num");
+    $allLessonsForContinue->execute([$id]);
+    $allLessonsForContinue = $allLessonsForContinue->fetchAll(\PDO::FETCH_COLUMN);
+
+    $doneLessons = $db->prepare("SELECT lesson_id FROM lesson_progress WHERE user_id=? AND completed=1 AND lesson_id IN (SELECT id FROM lessons WHERE course_id=?)");
+    $doneLessons->execute([$_SESSION['user_id'], $id]);
+    $doneLessons = $doneLessons->fetchAll(\PDO::FETCH_COLUMN);
+
+    $firstUncompleted = null;
+    foreach ($allLessonsForContinue as $lid) {
+        if (!in_array($lid, $doneLessons)) { $firstUncompleted = $lid; break; }
+    }
+    if ($firstUncompleted) {
+        $continueUrl = BASE_URL . "/courses/learn.php?course_id={$id}&lesson_id={$firstUncompleted}";
+    } elseif (!empty($allLessonsForContinue)) {
+        // All done — go to last lesson (shows cert banner)
+        $continueUrl = BASE_URL . "/courses/learn.php?course_id={$id}&lesson_id=" . end($allLessonsForContinue);
+    }
+}
+
 // Lessons
 $lessons = $db->prepare("SELECT * FROM lessons WHERE course_id = ? ORDER BY order_num");
 $lessons->execute([$id]);
@@ -192,7 +215,7 @@ include __DIR__ . '/../includes/header.php';
                         </div>
 
                         <?php if ($enrolled): ?>
-                            <a href="<?php echo BASE_URL; ?>/courses/learn.php?course_id=<?php echo $id; ?>" class="btn-primary-custom w-100 justify-content-center mb-3" style="font-size:16px;padding:14px;">
+                            <a href="<?php echo $continueUrl; ?>" class="btn-primary-custom w-100 justify-content-center mb-3" style="font-size:16px;padding:14px;">
                                 <i class="fas fa-play-circle"></i> Continue Learning
                             </a>
                             <div style="text-align:center;font-size:13px;color:var(--primary);"><i class="fas fa-check-circle me-1"></i>You're enrolled in this course</div>

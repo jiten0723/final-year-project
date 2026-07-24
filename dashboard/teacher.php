@@ -76,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_lesson'])) {
     $lesContent  = trim($_POST['lesson_content'] ?? '');
     $lesDuration = (int)($_POST['lesson_duration'] ?? 10);
     $lesPreview  = isset($_POST['is_free_preview']) ? 1 : 0;
+    $lesVideoUrl = trim($_POST['video_url'] ?? '');
 
     // Verify teacher owns this course
     $owns = $db->prepare("SELECT id FROM courses WHERE id=? AND instructor_id=?");
@@ -84,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_lesson'])) {
         $orderNum = $db->prepare("SELECT MAX(order_num)+1 FROM lessons WHERE course_id=?");
         $orderNum->execute([$courseId]);
         $orderNum = $orderNum->fetchColumn() ?: 1;
-        $db->prepare("INSERT INTO lessons (course_id,title,content,duration_minutes,order_num,is_free_preview) VALUES (?,?,?,?,?,?)")
-           ->execute([$courseId,$lesTitle,$lesContent,$lesDuration,$orderNum,$lesPreview]);
+        $db->prepare("INSERT INTO lessons (course_id,title,content,duration_minutes,order_num,is_free_preview,video_url) VALUES (?,?,?,?,?,?,?)")
+           ->execute([$courseId,$lesTitle,$lesContent,$lesDuration,$orderNum,$lesPreview,$lesVideoUrl ?: null]);
         // Update lesson count
         $db->prepare("UPDATE courses SET total_lessons=(SELECT COUNT(*) FROM lessons WHERE course_id=?) WHERE id=?")
            ->execute([$courseId,$courseId]);
